@@ -30,7 +30,7 @@ class MenuScene(Scene):
         self.setting_button = Button(
             "UI/button_setting.png", "UI/button_setting_hover.png",
             px - 150, py, 100, 100,
-            lambda: scene_manager.change_scene("game")##todo
+            lambda: scene_manager.change_scene("setting")##todo
         )
         
     @override
