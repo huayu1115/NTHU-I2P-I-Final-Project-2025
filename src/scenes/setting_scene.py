@@ -24,9 +24,10 @@ class SettingScene(Scene):
         self.background = BackgroundSprite("backgrounds/background1.png")
         self.font_title = pg.font.Font("assets/fonts/Pokemon Solid.ttf", 30)
         self.font = pg.font.Font("././assets/fonts/Minecraft.ttf", 15)
+        self.is_muted = False
 
         ## 文字
-        self.text_title = self.font_title.render("Setting", True, (0, 0, 0))
+        self.text_title = self.font_title.render("Settings", True, (0, 0, 0))
         self.text_volume_label = self.font.render("Volume", True, (0, 0, 0))
         
         ## 面板位置和大小
@@ -47,6 +48,15 @@ class SettingScene(Scene):
             on_click = lambda: scene_manager.change_scene("menu")
         )
 
+        self.mute_button = Button(
+            "UI/raw/UI_Flat_ToggleRightOff01a.png",
+            "UI/raw/UI_Flat_ToggleRightOff01a.png",
+            self.panel.centerx - 60,
+            self.panel.centery - 50,
+            40, 25,
+            on_click=self.toggle_mute
+        )
+
         ## 音量條
         bar_width, bar_height = 300, 20
         bar_x = self.panel.centerx - bar_width // 2
@@ -58,6 +68,18 @@ class SettingScene(Scene):
         handle_x = bar_x + int(GameSettings.AUDIO_VOLUME * bar_width) - handle_size // 2
         handle_y = bar_y + bar_height // 2 - handle_size // 2
         self.volume_handle_rect = pg.Rect(handle_x, handle_y, handle_size, handle_size)
+
+
+
+    def toggle_mute(self):
+        # 恢復播放
+        if self.is_muted:
+            self.is_muted = False
+            sound_manager.resume_all()  
+        # 暫停所有聲音
+        else:
+            self.is_muted = True
+            sound_manager.pause_all()   
 
     @override
     def enter(self) -> None:
@@ -85,7 +107,11 @@ class SettingScene(Scene):
                 # 設定音量
                 if sound_manager.current_bgm:
                     sound_manager.current_bgm.set_volume(ratio)
-    
+
+        ## 靜音按鈕
+        self.mute_button.update(dt)
+
+
     @override
     def draw(self, screen: pg.Surface) -> None:
         self.background.draw(screen)
@@ -122,3 +148,10 @@ class SettingScene(Scene):
         volume_text = self.font.render(f"{int(GameSettings.AUDIO_VOLUME * 100)}%", True, (50, 50, 50))
         screen.blit(self.text_volume_label, text_rect)
         screen.blit(volume_text, (self.panel.centerx + 200, self.volume_bar_rect.y))
+
+        ## 禁音
+        self.mute_button.draw(screen)
+        status_text = f"Mute: {'ON' if self.is_muted else 'OFF'}"
+        text_surface = self.font.render(status_text, True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=(self.panel.centerx - 110, self.panel.centery-40))
+        screen.blit(text_surface, text_rect)

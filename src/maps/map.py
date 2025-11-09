@@ -58,6 +58,20 @@ class Map:
         Teleportation: Player can enter a building by walking into certain tiles defined inside saves/*.json, and the map will be changed
         Hint: Maybe there is an way to switch the map using something from src/core/managers/game_manager.py called switch_... 
         '''
+        for tp in self.teleporters:
+            # 將格子座標轉換成實際像素座標
+            tp_rect = pg.Rect(
+                tp.pos.x,
+                tp.pos.y,
+                GameSettings.TILE_SIZE,
+                GameSettings.TILE_SIZE
+            )
+
+            # 檢查玩家是否走到傳送點
+            player_rect = pg.Rect(pos.x, pos.y, GameSettings.TILE_SIZE, GameSettings.TILE_SIZE)
+            if tp_rect.colliderect(player_rect):
+                return tp
+
         return None
 
     def _render_all_layers(self, target: pg.Surface) -> None:

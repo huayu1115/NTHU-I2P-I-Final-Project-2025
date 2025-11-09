@@ -36,16 +36,22 @@ class Player(Entity):
             dis.x = dis.x / length * self.speed * dt
             dis.y = dis.y / length * self.speed * dt
 
-        # X 軸移動
-        self.position.x += dis.x
-        if self.game_manager.check_collision(self.animation.rect):
-            self.position.x = self._snap_to_grid(self.position.x)
+       # 先嘗試 X 軸移動
+        if dis.x != 0:
+            self.animation.rect.x = self.position.x + dis.x
+            if not self.game_manager.check_collision(self.animation.rect):
+                self.position.x += dis.x
+            else:
+                self.position.x = self._snap_to_grid(self.position.x)
 
-        # Y 軸移動
-        self.position.y += dis.y
-        if self.game_manager.check_collision(self.animation.rect):
-            self.position.y = self._snap_to_grid(self.position.y)
-
+        # 再嘗試 Y 軸移動
+        if dis.y != 0:
+            self.animation.rect.y = self.position.y + dis.y
+            if not self.game_manager.check_collision(self.animation.rect):
+                self.position.y += dis.y
+            else:
+                self.position.y = self._snap_to_grid(self.position.y)
+                
         ## 給 Entity 判斷方向
         self.dis = dis
         
