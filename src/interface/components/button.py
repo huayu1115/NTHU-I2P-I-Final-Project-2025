@@ -21,30 +21,34 @@ class Button(UIComponent):
         on_click: Callable[[], None] | None = None
     ):
         self.img_button_default = Sprite(img_path, (width, height))
-        self.hitbox = pg.Rect(x, y, width, height)
+        self.img_button_hover = Sprite(img_hovered_path, (width, height))
+        self.img_button = self.img_button_default ## 預設使用一般的圖
+        self.hitbox = pg.Rect(x, y, width, height) ## 定義按鈕的位置與大小
+        self.on_click = on_click  ## 點擊事件
         '''
         [TODO HACKATHON 1]
         Initialize the properties
-        
-        self.img_button_hover = ...
-        self.img_button = ...       --> This is a reference for which image to render
-        self.on_click = ...
         '''
 
     @override
     def update(self, dt: float) -> None:
+
+        ## 偵測滑鼠是否在按鈕上，顯示 hover 圖
+        if self.hitbox.collidepoint(input_manager.mouse_pos):
+            self.img_button = self.img_button_hover
+
+            ## 是否點擊左鍵
+            if input_manager.mouse_pressed(1) and self.on_click is not None:
+                    self.on_click()
+        
+        else:
+            self.img_button = self.img_button_default
+
         '''
         [TODO HACKATHON 1]
         Check if the mouse cursor is colliding with the button, 
         1. If collide, draw the hover image
         2. If collide & clicked, call the on_click function
-        
-        if self.hitbox.collidepoint(input_manager.mouse_pos):
-            ...
-            if input_manager.mouse_pressed(1) and self.on_click is not None:
-                ...
-        else:
-            ...
         '''
         pass
     
@@ -54,8 +58,9 @@ class Button(UIComponent):
         [TODO HACKATHON 1]
         You might want to change this too
         '''
-        _ = screen.blit(self.img_button_default.image, self.hitbox)
-
+        ## 改成 img_button 讓他會隨狀態改變
+        _ = screen.blit(self.img_button.image, self.hitbox)
+        
 
 def main():
     import sys
@@ -85,6 +90,16 @@ def main():
         height=100,
         on_click=on_button_click
     )
+
+    button_setting = Button(
+        img_path="UI/button_setting.png",
+        img_hovered_path="UI/button_setting_hover.png",
+        x=WIDTH // 2 + 50,
+        y=HEIGHT // 2 - 50,
+        width=100,
+        height=100,
+        on_click=on_button_click
+    )
     
     running = True
     dt = 0
@@ -97,12 +112,14 @@ def main():
         
         dt = clock.tick(60) / 1000.0
         button.update(dt)
+        button_setting.update(dt)
         
         input_manager.reset()
         
         _ = screen.fill(bg_color)
         
         button.draw(screen)
+        button_setting.draw(screen)
         
         pg.display.flip()
     

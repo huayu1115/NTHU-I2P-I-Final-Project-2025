@@ -17,6 +17,18 @@ class Player(Entity):
     @override
     def update(self, dt: float) -> None:
         dis = Position(0, 0)
+
+        ## 控制玩家移動
+        if input_manager.key_down(pg.K_LEFT) or input_manager.key_down(pg.K_a):
+            dis.x -= self.speed
+        if input_manager.key_down(pg.K_RIGHT) or input_manager.key_down(pg.K_d):
+            dis.x += self.speed
+        if input_manager.key_down(pg.K_UP) or input_manager.key_down(pg.K_w):
+            dis.y -= self.speed
+        if input_manager.key_down(pg.K_DOWN) or input_manager.key_down(pg.K_s):
+            dis.y += self.speed
+        
+        self.position = dis
         '''
         [TODO HACKATHON 2]
         Calculate the distance change, and then normalize the distance
