@@ -74,7 +74,8 @@ class GameScene(Scene):
             
             camera = self.game_manager.player.camera
             '''
-            camera = PositionCamera(16 * GameSettings.TILE_SIZE, 30 * GameSettings.TILE_SIZE)
+            # 使用玩家在中央的相機
+            camera = self.game_manager.player.camera
             self.game_manager.current_map.draw(screen, camera)
             self.game_manager.player.draw(screen, camera)
         else:
@@ -89,7 +90,7 @@ class GameScene(Scene):
             list_online = self.online_manager.get_list_players()
             for player in list_online:
                 if player["map"] == self.game_manager.current_map.path_name:
-                    cam = self.game_manager.player.camera
-                    pos = cam.transform_position_as_position(Position(player["x"], player["y"]))
+                    camera = self.game_manager.player.camera
+                    pos = camera.transform_position_as_position(Position(player["x"], player["y"]))
                     self.sprite_online.update_pos(pos)
                     self.sprite_online.draw(screen)

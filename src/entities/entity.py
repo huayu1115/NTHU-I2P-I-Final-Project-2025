@@ -62,8 +62,12 @@ class Entity:
         [TODO HACKATHON 3]
         Implement the correct algorithm of player camera
         '''
-        return PositionCamera(int(self.position.x), int(self.position.y))
+        # 將相機放在玩家中心: 減掉畫面寬和高的一半，讓玩家保持在畫面中央
+        cam_x = int(self.position.x - GameSettings.SCREEN_WIDTH // 2)
+        cam_y = int(self.position.y - GameSettings.SCREEN_HEIGHT // 2)
         
+        return PositionCamera(cam_x, cam_y)
+            
     def to_dict(self) -> dict[str, object]:
         return {
             "x": self.position.x / GameSettings.TILE_SIZE,
