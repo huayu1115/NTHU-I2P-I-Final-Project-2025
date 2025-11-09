@@ -13,6 +13,7 @@ class Player(Entity):
 
     def __init__(self, x: float, y: float, game_manager: GameManager) -> None:
         super().__init__(x, y, game_manager)
+        
 
     @override
     def update(self, dt: float) -> None:
@@ -38,6 +39,9 @@ class Player(Entity):
         ## 更新玩家位置
         self.position.x += dis.x
         self.position.y += dis.y
+        ## 給 Entity 判斷方向
+        self.dis = dis
+        
         '''
         [TODO HACKATHON 2]
         Calculate the distance change, and then normalize the distance

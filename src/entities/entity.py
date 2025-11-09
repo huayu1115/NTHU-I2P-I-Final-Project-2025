@@ -25,6 +25,25 @@ class Entity:
         self.game_manager = game_manager
 
     def update(self, dt: float) -> None:
+
+        ## 根據玩家方向設定 direction
+        if hasattr(self, 'dis') and self.dis is not None:
+            dis = self.dis
+            if abs(dis.x) > abs(dis.y):
+                self.direction = Direction.RIGHT if dis.x > 0 else Direction.LEFT
+            elif abs(dis.y) > 0:
+                self.direction = Direction.DOWN if dis.y > 0 else Direction.UP    
+
+        ## 根據 direction 切換動畫
+        if self.direction == Direction.UP:
+            self.animation.switch("up")
+        elif self.direction == Direction.DOWN:
+            self.animation.switch("down")
+        elif self.direction == Direction.LEFT:
+            self.animation.switch("left")
+        elif self.direction == Direction.RIGHT:
+            self.animation.switch("right")
+
         self.animation.update_pos(self.position)
         self.animation.update(dt)
         
