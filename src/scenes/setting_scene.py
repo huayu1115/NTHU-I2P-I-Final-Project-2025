@@ -22,8 +22,14 @@ class SettingScene(Scene):
     def __init__(self):
         super().__init__()
         self.background = BackgroundSprite("backgrounds/background1.png")
+        self.font_title = pg.font.Font("assets/fonts/Pokemon Solid.ttf", 30)
+        self.font = pg.font.Font("././assets/fonts/Minecraft.ttf", 15)
 
-        # 設定面板位置和大小
+        ## 文字
+        self.text_title = self.font_title.render("Setting", True, (0, 0, 0))
+        self.text_volume_label = self.font.render("Volume", True, (0, 0, 0))
+        
+        ## 面板位置和大小
         panel_width, panel_height = 600, 500
         self.panel = pg.Rect(
             (GameSettings.SCREEN_WIDTH - panel_width) // 2,
@@ -41,13 +47,13 @@ class SettingScene(Scene):
             on_click = lambda: scene_manager.change_scene("menu")
         )
 
-        # 音量條
+        ## 音量條
         bar_width, bar_height = 300, 20
         bar_x = self.panel.centerx - bar_width // 2
         bar_y = (self.panel.centery) - 100
         self.volume_bar_rect = pg.Rect(bar_x, bar_y, bar_width, bar_height)
 
-        # 音量滑桿
+        ## 音量滑桿
         handle_size = 20
         handle_x = bar_x + int(GameSettings.AUDIO_VOLUME * bar_width) - handle_size // 2
         handle_y = bar_y + bar_height // 2 - handle_size // 2
@@ -91,6 +97,11 @@ class SettingScene(Scene):
         # 畫關閉按鈕
         self.close_button.draw(screen)
 
+        # 標題
+        text_surface = self.font_title.render("Setting", True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=(self.panel.centerx, self.panel.top + 80))
+        screen.blit(text_surface, text_rect)
+
         # 畫音量條
         pg.draw.rect(screen, (204, 102, 0), self.volume_bar_rect)  
 
@@ -105,3 +116,9 @@ class SettingScene(Scene):
         # 畫滑桿
         pg.draw.rect(screen, (255, 255, 255), self.volume_handle_rect)
         pg.draw.rect(screen, (0, 0, 0), self.volume_handle_rect, 2)
+
+        # 文字 -- 音量條
+        text_rect = self.text_volume_label.get_rect(center=(self.panel.centerx - 120, self.volume_bar_rect.y - 20))
+        volume_text = self.font.render(f"{int(GameSettings.AUDIO_VOLUME * 100)}%", True, (50, 50, 50))
+        screen.blit(self.text_volume_label, text_rect)
+        screen.blit(volume_text, (self.panel.centerx + 200, self.volume_bar_rect.y))
