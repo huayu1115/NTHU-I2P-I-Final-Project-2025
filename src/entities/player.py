@@ -8,7 +8,7 @@ import math
 from typing import override
 
 class Player(Entity):
-    speed: float = 4.0 * GameSettings.TILE_SIZE
+    speed: float = 4 * GameSettings.TILE_SIZE
     game_manager: GameManager
 
     def __init__(self, x: float, y: float, game_manager: GameManager) -> None:
@@ -16,19 +16,28 @@ class Player(Entity):
 
     @override
     def update(self, dt: float) -> None:
-        dis = Position(0, 0)
+        ## 暫存每幀位移向量，從 (0, 0) 開始
+        dis = Position(0, 0) 
 
         ## 控制玩家移動
         if input_manager.key_down(pg.K_LEFT) or input_manager.key_down(pg.K_a):
-            dis.x -= self.speed
+            dis.x -= 1
         if input_manager.key_down(pg.K_RIGHT) or input_manager.key_down(pg.K_d):
-            dis.x += self.speed
+            dis.x += 1
         if input_manager.key_down(pg.K_UP) or input_manager.key_down(pg.K_w):
-            dis.y -= self.speed
+            dis.y -= 1
         if input_manager.key_down(pg.K_DOWN) or input_manager.key_down(pg.K_s):
-            dis.y += self.speed
-        
-        self.position = dis
+            dis.y += 1
+
+        ## normalize
+        length = (dis.x**2 + dis.y**2) ** 0.5
+        if length != 0:
+            dis.x = dis.x / length * self.speed * dt
+            dis.y = dis.y / length * self.speed * dt
+
+        ## 更新玩家位置
+        self.position.x += dis.x
+        self.position.y += dis.y
         '''
         [TODO HACKATHON 2]
         Calculate the distance change, and then normalize the distance
@@ -42,17 +51,6 @@ class Player(Entity):
                     3. Update Y
                     4. If collide, snap to grid
                   instead of update both x, y, then snap to grid
-        
-        if input_manager.key_down(pg.K_LEFT) or input_manager.key_down(pg.K_a):
-            dis.x -= ...
-        if input_manager.key_down(pg.K_RIGHT) or input_manager.key_down(pg.K_d):
-            dis.x += ...
-        if input_manager.key_down(pg.K_UP) or input_manager.key_down(pg.K_w):
-            dis.y -= ...
-        if input_manager.key_down(pg.K_DOWN) or input_manager.key_down(pg.K_s):
-            dis.y += ...
-        
-        self.position = ...
         '''
         
         # Check teleportation
