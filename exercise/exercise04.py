@@ -15,7 +15,7 @@ pg.init()
 screen = pg.display.set_mode((640, 480))
 pg.display.set_caption("Tilemap")
 
-tmxdata = load_pygame("assets/maps/map.tmx")
+tmxdata = load_pygame("./assets/maps/map.tmx")
 
 # Create a canvas for images
 tile_w, tile_h = tmxdata.tilewidth, tmxdata.tileheight
@@ -26,7 +26,15 @@ surface = pg.Surface((pixel_w, pixel_h), pg.SRCALPHA)
 for layer in tmxdata.visible_layers:
     if isinstance(layer, TiledTileLayer):
         for x, y, gid in layer:
-            pass
+            if gid == 0:
+                continue
+            image = tmxdata.get_tile_image_by_gid(gid)
+            if image is None:
+                continue
+            if image.get_size() != (tile_w, tile_h):
+                image = pg.transform.scale(image, (tile_w, tile_h))
+            
+            surface.blit(image, (x * tile_w, y * tile_h))
 
 running = True
 while running:
