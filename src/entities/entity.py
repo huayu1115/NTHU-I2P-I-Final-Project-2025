@@ -62,7 +62,8 @@ class Entity:
         [TODO HACKATHON 3]
         Implement the correct algorithm of player camera
         '''
-        # 將相機放在玩家中心: 減掉畫面寬和高的一半，讓玩家保持在畫面中央
+        ## PositionCamera 相機的左上角位置，決定顯示哪塊地圖
+        ## 將相機放在玩家中心: 減掉畫面寬和高的一半，讓玩家保持在畫面中央
         cam_x = int(self.position.x - GameSettings.SCREEN_WIDTH // 2)
         cam_y = int(self.position.y - GameSettings.SCREEN_HEIGHT // 2)
         

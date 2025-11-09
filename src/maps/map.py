@@ -46,6 +46,11 @@ class Map:
         Return True if collide if rect param collide with self._collision_map
         Hint: use API colliderect and iterate each rectangle to check
         '''
+        ## colliderect 是 pygame 的 API，用來檢查兩個矩形是否有交集
+        for obj in self._collision_map:
+            if rect.colliderect(obj):
+                return True
+
         return False
         
     def check_teleport(self, pos: Position) -> Teleport | None:
@@ -74,7 +79,10 @@ class Map:
             target.blit(image, (x * GameSettings.TILE_SIZE, y * GameSettings.TILE_SIZE))
     
     def _create_collision_map(self) -> list[pg.Rect]:
+
         rects = []
+
+        ## 遍歷可見圖層、篩選碰撞圖層、遍歷所有格子
         for layer in self.tmxdata.visible_layers:
             if isinstance(layer, pytmx.TiledTileLayer) and ("collision" in layer.name.lower() or "house" in layer.name.lower()):
                 for x, y, gid in layer:
@@ -85,7 +93,12 @@ class Map:
                         Append the collision rectangle to the rects[] array
                         Remember scale the rectangle with the TILE_SIZE from settings
                         '''
-                        pass
+                        ## 將格子座標轉換為世界座標
+                        rect_x = x * GameSettings.TILE_SIZE
+                        rect_y = y * GameSettings.TILE_SIZE
+                        rect = pg.Rect(rect_x, rect_y, GameSettings.TILE_SIZE, GameSettings.TILE_SIZE)
+                        rects.append(rect)
+
         return rects
 
     @classmethod
