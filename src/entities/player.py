@@ -35,23 +35,48 @@ class Player(Entity):
         if length != 0:
             dis.x = dis.x / length * self.speed * dt
             dis.y = dis.y / length * self.speed * dt
-
-       # 先嘗試 X 軸移動
+        '''
+        # 先嘗試 X 軸移動
         if dis.x != 0:
-            self.animation.rect.x = self.position.x + dis.x
+            new_x = self.position.x + dis.x
+            self.animation.rect.x = new_x  # 更新動畫矩形，用於碰撞檢測
             if not self.game_manager.check_collision(self.animation.rect):
-                self.position.x += dis.x
+                self.position.x = new_x  # 沒碰撞，直接更新
             else:
                 self.position.x = self._snap_to_grid(self.position.x)
 
-        # 再嘗試 Y 軸移動
+        # Y 軸移動
         if dis.y != 0:
-            self.animation.rect.y = self.position.y + dis.y
+            new_y = self.position.y + dis.y
+            self.animation.rect.y = new_y
             if not self.game_manager.check_collision(self.animation.rect):
-                self.position.y += dis.y
+                self.position.y = new_y
             else:
                 self.position.y = self._snap_to_grid(self.position.y)
-                
+        '''
+        # 預計新位置
+        new_x = self.position.x + dis.x
+        new_y = self.position.y + dis.y
+
+        # 嘗試 X 軸移動
+        self.animation.rect.x = new_x
+        self.animation.rect.y = self.position.y  # 只改 X，Y 不動
+        if not self.game_manager.check_collision(self.animation.rect):
+            self.position.x = new_x
+        else:
+            # X 有碰撞，不動 X
+            self.position.x = self.position.x  # 或用微小貼牆邏輯
+            # 不影響 Y，繼續檢查 Y
+
+        # 嘗試 Y 軸移動
+        self.animation.rect.x = self.position.x  # X 已更新或保持
+        self.animation.rect.y = new_y
+        if not self.game_manager.check_collision(self.animation.rect):
+            self.position.y = new_y
+        else:
+            # Y 有碰撞，不動 Y
+            self.position.y = self.position.y  # 或用微小貼牆邏輯
+
         ## 給 Entity 判斷方向
         self.dis = dis
         
@@ -73,8 +98,18 @@ class Player(Entity):
         # Check teleportation
         tp = self.game_manager.current_map.check_teleport(self.position)
         if tp:
-            dest = tp.destination
-            self.game_manager.switch_map(dest)
+            
+            dest_map = tp.destination
+
+            # 暫存玩家位置
+            old_pos = self.position.copy()
+
+            # 切換地圖
+            self.game_manager.switch_map(dest_map)
+
+            # 切換後回到原本位置
+            self.position = old_pos
+            self.animation.update_pos(self.position)
                 
         super().update(dt)
 
