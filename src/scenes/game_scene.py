@@ -8,11 +8,17 @@ from src.utils import Logger, PositionCamera, GameSettings, Position
 from src.core.services import sound_manager
 from src.sprites import Sprite
 from typing import override
+from src.interface.components import Button
 
 class GameScene(Scene):
     game_manager: GameManager
     online_manager: OnlineManager | None
     sprite_online: Sprite
+
+    menu_button: Button
+    is_menu_open: bool
+    menu_box: pg.Rect
+    close_button: Button
     
     def __init__(self):
         super().__init__()
@@ -29,8 +35,46 @@ class GameScene(Scene):
         else:
             self.online_manager = None
         self.sprite_online = Sprite("ingame_ui/options1.png", (GameSettings.TILE_SIZE, GameSettings.TILE_SIZE))
+
+        ## 初始化 menu ##
+        px, py = GameSettings.SCREEN_WIDTH , GameSettings.SCREEN_HEIGHT
+        self.is_menu_open = False
+
+        self.menu_button = Button(
+            "UI/button_setting.png",
+            "UI/button_setting_hover.png",
+            px - 50, py - 50,
+            35, 35,
+            on_click = lambda: self.toggle_menu()
+        ) 
+
+        menu_box_width, menu_box_height = 600, 500
+        self.menu_box = pg.Rect(
+            (GameSettings.SCREEN_WIDTH - menu_box_width) // 2,
+            (GameSettings.SCREEN_HEIGHT - menu_box_height) // 2,
+            menu_box_width,
+            menu_box_height
+        )
+
+        self.close_button = Button(
+            "UI/button_x.png",
+            "UI/button_x_hover.png",
+            self.menu_box.right - 45,
+            self.menu_box.y + 10,
+            35, 35,
+            on_click = lambda: self.toggle_menu()
+        )
         
-        
+    ## 切換 menu 開啟或關閉 ##
+    def toggle_menu(self):      
+        self.is_menu_open = not self.is_menu_open
+    ## 黑色遮罩 ## 
+    def draw_overlay(self, screen: pg.Surface):
+        overlay = pg.Surface(screen.get_size(), pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 150)) # RGBA, 150 代表透明度
+        screen.blit(overlay, (0, 0))
+
+
     @override
     def enter(self) -> None:
         sound_manager.play_bgm("RBY 103 Pallet Town.ogg")
@@ -44,24 +88,36 @@ class GameScene(Scene):
         
     @override
     def update(self, dt: float):
-        # Check if there is assigned next scene
-        self.game_manager.try_switch_map()
-        
-        # Update player and other data
-        if self.game_manager.player:
-            self.game_manager.player.update(dt)
-        for enemy in self.game_manager.current_enemy_trainers:
-            enemy.update(dt)
+
+        self.menu_button.update(dt)
+
+        ## menu 關閉時 (正常遊戲) ##
+        if not self.is_menu_open:
+            # Check if there is assigned next scene
+            self.game_manager.try_switch_map()
             
-        # Update others
-        self.game_manager.bag.update(dt)
+            # Update player and other data
+            if self.game_manager.player:
+                self.game_manager.player.update(dt)
+            for enemy in self.game_manager.current_enemy_trainers:
+                enemy.update(dt)
+                
+            # Update others
+            self.game_manager.bag.update(dt)
+            
+            if self.game_manager.player is not None and self.online_manager is not None:
+                _ = self.online_manager.update(
+                    self.game_manager.player.position.x, 
+                    self.game_manager.player.position.y,
+                    self.game_manager.current_map.path_name
+                )
+
+        ## menu 開啟時 ##
+        else:
+            self.close_button.update(dt)
+            
+
         
-        if self.game_manager.player is not None and self.online_manager is not None:
-            _ = self.online_manager.update(
-                self.game_manager.player.position.x, 
-                self.game_manager.player.position.y,
-                self.game_manager.current_map.path_name
-            )
         
     @override
     def draw(self, screen: pg.Surface):        
@@ -71,7 +127,6 @@ class GameScene(Scene):
             Implement the camera algorithm logic here
             Right now it's hard coded, you need to follow the player's positions
             you may use the below example, but the function still incorrect, you may trace the entity.py
-            
             camera = self.game_manager.player.camera
             '''
             # 使用玩家在中央的相機
@@ -81,6 +136,7 @@ class GameScene(Scene):
         else:
             camera = PositionCamera(0, 0)
             self.game_manager.current_map.draw(screen, camera)
+
         for enemy in self.game_manager.current_enemy_trainers:
             enemy.draw(screen, camera)
 
@@ -94,3 +150,12 @@ class GameScene(Scene):
                     pos = camera.transform_position_as_position(Position(player["x"], player["y"]))
                     self.sprite_online.update_pos(pos)
                     self.sprite_online.draw(screen)
+
+        ## menu ##
+        if self.is_menu_open:
+            self.draw_overlay(screen) #背景變暗
+            pg.draw.rect(screen, (255, 153, 51), self.menu_box)
+            pg.draw.rect(screen, (255, 178, 102), self.menu_box, 10) 
+            self.close_button.draw(screen)
+        
+        self.menu_button.draw(screen)

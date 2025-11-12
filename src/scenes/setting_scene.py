@@ -48,12 +48,22 @@ class SettingScene(Scene):
             on_click = lambda: scene_manager.change_scene("menu")
         )
 
-        self.mute_button = Button(
+        ## 靜音按鈕 ##
+        btn_x = self.panel.centerx - 60
+        btn_y = self.panel.centery - 50
+        btn_w, btn_h = 40, 25
+
+        self.mute_button_off = Button(
             "UI/raw/UI_Flat_ToggleRightOff01a.png",
             "UI/raw/UI_Flat_ToggleRightOff01a.png",
-            self.panel.centerx - 60,
-            self.panel.centery - 50,
-            40, 25,
+            btn_x, btn_y, btn_w, btn_h,
+            on_click=self.toggle_mute
+        )
+
+        self.mute_button_on = Button(
+            "UI/raw/UI_Flat_ToggleRightOn01a.png",
+            "UI/raw/UI_Flat_ToggleRightOn01a.png",   
+            btn_x, btn_y, btn_w, btn_h,
             on_click=self.toggle_mute
         )
 
@@ -108,8 +118,11 @@ class SettingScene(Scene):
                 if sound_manager.current_bgm:
                     sound_manager.current_bgm.set_volume(ratio)
 
-        ## 靜音按鈕
-        self.mute_button.update(dt)
+        ## 靜音按鈕 ##
+        if self.is_muted:
+            self.mute_button_on.update(dt)
+        else:
+            self.mute_button_off.update(dt)
 
 
     @override
@@ -150,7 +163,10 @@ class SettingScene(Scene):
         screen.blit(volume_text, (self.panel.centerx + 200, self.volume_bar_rect.y))
 
         ## 禁音
-        self.mute_button.draw(screen)
+        if self.is_muted:
+            self.mute_button_on.draw(screen)
+        else:
+            self.mute_button_off.draw(screen)
         status_text = f"Mute: {'ON' if self.is_muted else 'OFF'}"
         text_surface = self.font.render(status_text, True, (0, 0, 0))
         text_rect = text_surface.get_rect(center=(self.panel.centerx - 110, self.panel.centery-40))
