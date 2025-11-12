@@ -100,17 +100,8 @@ class Player(Entity):
         if tp:
             
             dest_map = tp.destination
-
-            # 暫存玩家位置
-            old_pos = self.position.copy()
-
-            # 切換地圖
             self.game_manager.switch_map(dest_map)
-
-            # 切換後回到原本位置
-            self.position = old_pos
-            self.animation.update_pos(self.position)
-                
+         
         super().update(dt)
 
     @override

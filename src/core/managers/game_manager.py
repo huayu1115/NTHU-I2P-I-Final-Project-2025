@@ -23,6 +23,7 @@ class GameManager:
     # Changing Scene properties
     should_change_scene: bool
     next_map: str
+    player_last_positions: dict[str, Position]
     
     def __init__(self, maps: dict[str, Map], start_map: str, 
                  player: Player | None,
@@ -40,6 +41,7 @@ class GameManager:
         # Check If you should change scene
         self.should_change_scene = False
         self.next_map = ""
+        self.player_last_positions = {}
         
     @property
     def current_map(self) -> Map:
@@ -57,6 +59,9 @@ class GameManager:
         if target not in self.maps:
             Logger.warning(f"Map '{target}' not loaded; cannot switch.")
             return
+        if self.player:
+            current_map = self.current_map_key
+            self.player_last_positions[current_map] = self.player.position.copy()
         
         self.next_map = target
         self.should_change_scene = True
@@ -67,7 +72,10 @@ class GameManager:
             self.next_map = ""
             self.should_change_scene = False
             if self.player:
-                self.player.position = self.maps[self.current_map_key].spawn
+                if self.current_map_key in self.player_last_positions:
+                    self.player.position = self.player_last_positions[self.current_map_key]
+                else:
+                    self.player.position = self.maps[self.current_map_key].spawn
             
     def check_collision(self, rect: pg.Rect) -> bool:
         if self.maps[self.current_map_key].check_collision(rect):
