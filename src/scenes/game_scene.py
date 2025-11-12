@@ -18,7 +18,12 @@ class GameScene(Scene):
     menu_button: Button
     is_menu_open: bool
     menu_box: pg.Rect
-    close_button: Button
+    close_menu_button: Button
+
+    bag_button: Button
+    is_bag_open: bool
+    bag_box: pg.Rect
+    close_bag_button: Button
     
     def __init__(self):
         super().__init__()
@@ -36,8 +41,11 @@ class GameScene(Scene):
             self.online_manager = None
         self.sprite_online = Sprite("ingame_ui/options1.png", (GameSettings.TILE_SIZE, GameSettings.TILE_SIZE))
 
-        ## 初始化 menu ##
+        self.font_title = pg.font.Font("././assets/fonts/Pokemon Solid.ttf", 30)
+        self.font_item = pg.font.Font("././assets/fonts/Minecraft.ttf", 20)
         px, py = GameSettings.SCREEN_WIDTH , GameSettings.SCREEN_HEIGHT
+
+        ## 初始化 menu ##
         self.is_menu_open = False
 
         self.menu_button = Button(
@@ -45,7 +53,7 @@ class GameScene(Scene):
             "UI/button_setting_hover.png",
             px - 50, py - 50,
             35, 35,
-            on_click = lambda: self.toggle_menu()
+            on_click = self.toggle_menu
         ) 
 
         menu_box_width, menu_box_height = 600, 500
@@ -56,18 +64,51 @@ class GameScene(Scene):
             menu_box_height
         )
 
-        self.close_button = Button(
+        self.close_menu_button = Button(
             "UI/button_x.png",
             "UI/button_x_hover.png",
             self.menu_box.right - 45,
             self.menu_box.y + 10,
             35, 35,
-            on_click = lambda: self.toggle_menu()
+            on_click = self.toggle_menu
+        )
+
+        ## 初始化 bag ##
+        self.is_bag_open = False
+
+        self.bag_button = Button(
+            "UI/button_backpack.png",
+            "UI/button_backpack_hover.png",
+            px - 50, py - 100,
+            35, 35,
+            on_click = self.toggle_bag
+        ) 
+
+        bag_box_width, bag_box_height = 600, 500
+        self.bag_box = pg.Rect(
+            (GameSettings.SCREEN_WIDTH - bag_box_width) // 2,
+            (GameSettings.SCREEN_HEIGHT - bag_box_height) // 2,
+            bag_box_width,
+            bag_box_height
+        )
+
+        self.close_bag_button = Button(
+            "UI/button_x.png",
+            "UI/button_x_hover.png",
+            self.bag_box.right - 45,
+            self.bag_box.y + 10,
+            35, 35,
+            on_click = self.toggle_bag
         )
         
     ## 切換 menu 開啟或關閉 ##
     def toggle_menu(self):      
         self.is_menu_open = not self.is_menu_open
+
+    ## 切換 bag 開啟或關閉 ##
+    def toggle_bag(self):      
+        self.is_bag_open = not self.is_bag_open
+
     ## 黑色遮罩 ## 
     def draw_overlay(self, screen: pg.Surface):
         overlay = pg.Surface(screen.get_size(), pg.SRCALPHA)
@@ -90,9 +131,15 @@ class GameScene(Scene):
     def update(self, dt: float):
 
         self.menu_button.update(dt)
+        self.bag_button.update(dt)
 
-        ## menu 關閉時 (正常遊戲) ##
-        if not self.is_menu_open:
+        ## menu 開啟時 ##
+        if self.is_menu_open: 
+            self.close_menu_button.update(dt)
+        ## bag 開啟時 ##
+        elif self.is_bag_open:
+            self.close_bag_button.update(dt)
+        else: ## 正常遊戲 ##
             # Check if there is assigned next scene
             self.game_manager.try_switch_map()
             
@@ -112,9 +159,8 @@ class GameScene(Scene):
                     self.game_manager.current_map.path_name
                 )
 
-        ## menu 開啟時 ##
-        else:
-            self.close_button.update(dt)
+    
+            
             
 
         
@@ -156,6 +202,51 @@ class GameScene(Scene):
             self.draw_overlay(screen) #背景變暗
             pg.draw.rect(screen, (255, 153, 51), self.menu_box)
             pg.draw.rect(screen, (255, 178, 102), self.menu_box, 10) 
-            self.close_button.draw(screen)
+            self.close_menu_button.draw(screen)
+
+        ## bag ##
+        if self.is_bag_open:
+            self.draw_overlay(screen)
+            pg.draw.rect(screen, (255, 153, 51), self.bag_box)
+            pg.draw.rect(screen, (255, 178, 102), self.bag_box, 10) 
+            self.close_bag_button.draw(screen)
+
+            ## 取得背包資料: 怪物和物品列表 ##
+            items = self.game_manager.bag._items_data
+            monsters = self.game_manager.bag._monsters_data
+
+            title_Backpack = self.font_title.render("Backpack", True, (0, 0, 0)) # render 渲染文字圖片(Surface)
+            title_rect = title_Backpack.get_rect(centerx=self.bag_box.centerx, y=self.bag_box.y + 30) # 定位
+            screen.blit(title_Backpack, title_rect) # blit: Pygame 用來複製貼上一個 Surface 到另一個 Surface
+
+            # 繪製物品列表
+            item_title = self.font_title.render("Items", True, (0, 0, 0))
+            screen.blit(item_title, (self.bag_box.x + 50, self.bag_box.y + 100))
+
+            current_y = self.bag_box.y + 150 # 列表起始 Y 座標
+            for item in items:
+                item_name = item.get("name", "Unknown Item")
+                item_quantity = item.get("quantity", 1)
+                
+                text = f"{item_name} x{item_quantity}"
+                item_text = self.font_item.render(text, True, (50, 50, 50))
+                screen.blit(item_text, (self.bag_box.x + 60, current_y))
+                current_y += 35 # 換行
+
+            # 繪製怪物列表
+            monster_title = self.font_title.render("Monsters", True, (0, 0, 0))
+            screen.blit(monster_title, (self.bag_box.centerx + 50, self.bag_box.y + 100))
+            
+            current_y = self.bag_box.y + 150 # 重置 Y 座標
+            for monster in monsters:
+                monster_name = monster.get("name", "Unknown Monster")
+                monster_level = monster.get("level", 1)
+
+                text = f"Lv.{monster_level} {monster_name}"
+                monster_text = self.font_item.render(text, True, (50, 50, 50))
+                screen.blit(monster_text, (self.bag_box.centerx + 60, current_y))
+                current_y += 35 # 換行
+
         
         self.menu_button.draw(screen)
+        self.bag_button.draw(screen)
