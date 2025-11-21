@@ -27,6 +27,10 @@ class GameScene(Scene):
     setting_box: pg.Rect
     close_setting_button: Button
 
+    volume_bar_rect: pg.Rect
+    volume_handle_rect: pg.Rect
+    volume: float
+
     '''check point 2 - 3: Backpack Overlay'''
     bag_button: Button
     is_bag_open: bool
@@ -49,11 +53,12 @@ class GameScene(Scene):
             self.online_manager = None
         self.sprite_online = Sprite("ingame_ui/options1.png", (GameSettings.TILE_SIZE, GameSettings.TILE_SIZE))
 
+        ## 字型
         self.font_title = pg.font.Font("././assets/fonts/Pokemon Solid.ttf", 30)
         self.font_item = pg.font.Font("././assets/fonts/Minecraft.ttf", 20)
         px, py = GameSettings.SCREEN_WIDTH , GameSettings.SCREEN_HEIGHT
 
-        ## 初始化 menu ##
+        '''check point 2 - 1: Overlay 初始化 menu'''
         self.is_menu_open = False
 
         self.menu_button = Button(
@@ -81,8 +86,9 @@ class GameScene(Scene):
             on_click = self.toggle_menu
         )
 
-        ## 初始化 setting ##
+        '''check point 2 - 4: Setting Overlay 初始化 setting'''
         self.is_setting_open = False
+        self.is_muted = False
 
         self.setting_button = Button(
             "UI/button_setting.png",
@@ -100,6 +106,10 @@ class GameScene(Scene):
             setting_box_height
         )
 
+        
+        self.text_title = self.font_title.render("Settings", True, (0, 0, 0))
+        self.text_volume_label = self.font_item.render("Volume", True, (0, 0, 0))
+
         self.close_setting_button = Button(
             "UI/button_x.png",
             "UI/button_x_hover.png",
@@ -109,7 +119,38 @@ class GameScene(Scene):
             on_click = self.toggle_setting
         )
 
-        ## 初始化 bag ##
+        ## 靜音按鈕 
+        btn_x = self.setting_box.centerx - 60
+        btn_y = self.setting_box.centery - 50
+        btn_w, btn_h = 40, 25
+
+        self.mute_button_off = Button(
+            "UI/raw/UI_Flat_ToggleRightOff01a.png",
+            "UI/raw/UI_Flat_ToggleRightOff01a.png",
+            btn_x, btn_y, btn_w, btn_h,
+            on_click=self.toggle_mute
+        )
+
+        self.mute_button_on = Button(
+            "UI/raw/UI_Flat_ToggleRightOn01a.png",
+            "UI/raw/UI_Flat_ToggleRightOn01a.png",   
+            btn_x, btn_y, btn_w, btn_h,
+            on_click=self.toggle_mute
+        )
+
+        ## 音量條
+        bar_width, bar_height = 300, 20
+        bar_x = self.setting_box.centerx - bar_width // 2
+        bar_y = (self.setting_box.centery) - 100
+        self.volume_bar_rect = pg.Rect(bar_x, bar_y, bar_width, bar_height)
+
+        ## 音量滑桿
+        handle_size = 20
+        handle_x = bar_x + int(GameSettings.AUDIO_VOLUME * bar_width) - handle_size // 2
+        handle_y = bar_y + bar_height // 2 - handle_size // 2
+        self.volume_handle_rect = pg.Rect(handle_x, handle_y, handle_size, handle_size)
+
+        '''check point 2 - 3: Backpack Overlay 初始化 bag'''
         self.is_bag_open = False
 
         self.bag_button = Button(
@@ -135,8 +176,10 @@ class GameScene(Scene):
             self.bag_box.y + 10,
             35, 35,
             on_click = self.toggle_bag
-        )
-        
+        )  
+
+
+    '''check point 2: function'''      
     ## 切換 menu 開啟或關閉 ##
     def toggle_menu(self):      
         self.is_menu_open = not self.is_menu_open
@@ -155,6 +198,15 @@ class GameScene(Scene):
         overlay.fill((0, 0, 0, 150)) # RGBA, 150 代表透明度
         screen.blit(overlay, (0, 0))
 
+    def toggle_mute(self):
+        # 恢復播放
+        if self.is_muted:
+            self.is_muted = False
+            sound_manager.resume_all()  
+        # 暫停所有聲音
+        else:
+            self.is_muted = True
+            sound_manager.pause_all()   
 
     @override
     def enter(self) -> None:
@@ -180,6 +232,24 @@ class GameScene(Scene):
         ## setting 開啟時 ##
         elif self.is_setting_open:
             self.close_setting_button.update(dt)
+
+            ## 音量條 ##
+            if pg.mouse.get_pressed()[0]:  
+                mx, my = pg.mouse.get_pos()
+                if self.volume_bar_rect.collidepoint(mx, my):
+                    # 計算音量比例
+                    ratio = (mx - self.volume_bar_rect.x) / self.volume_bar_rect.width
+                    ratio = max(0, min(1, ratio))
+                    GameSettings.AUDIO_VOLUME = ratio
+                    # 設定音量
+                    if sound_manager.current_bgm:
+                        sound_manager.current_bgm.set_volume(ratio)
+            ## 靜音按鈕 ##
+            if self.is_muted:
+                self.mute_button_on.update(dt)
+            else:
+                self.mute_button_off.update(dt)
+
         ## bag 開啟時 ##
         elif self.is_bag_open:
             self.close_bag_button.update(dt)
@@ -249,6 +319,42 @@ class GameScene(Scene):
             pg.draw.rect(screen, (255, 153, 51), self.setting_box)
             pg.draw.rect(screen, (255, 178, 102), self.setting_box, 10) 
             self.close_setting_button.draw(screen)
+
+            # 標題
+            text_surface = self.font_title.render("Setting", True, (0, 0, 0))
+            text_rect = text_surface.get_rect(center=(self.setting_box.centerx, self.setting_box.top + 80))
+            screen.blit(text_surface, text_rect)
+
+            # 畫音量條
+            pg.draw.rect(screen, (204, 102, 0), self.volume_bar_rect)  
+
+            # 根據音量比例畫出目前音量大小
+            fill_width = int(self.volume_bar_rect.width * GameSettings.AUDIO_VOLUME)
+            pg.draw.rect(screen, (255, 178, 102), (self.volume_bar_rect.x, self.volume_bar_rect.y, fill_width, self.volume_bar_rect.height))
+
+            # 更新滑桿位置
+            self.volume_handle_rect.x = (
+                self.volume_bar_rect.x + int(GameSettings.AUDIO_VOLUME * self.volume_bar_rect.width) - self.volume_handle_rect.width // 2
+            )
+            # 畫滑桿
+            pg.draw.rect(screen, (255, 255, 255), self.volume_handle_rect)
+            pg.draw.rect(screen, (0, 0, 0), self.volume_handle_rect, 2)
+
+            # 文字 -- 音量條
+            text_rect = self.text_volume_label.get_rect(center=(self.setting_box.centerx - 120, self.volume_bar_rect.y - 20))
+            volume_text = self.font_item.render(f"{int(GameSettings.AUDIO_VOLUME * 100)}%", True, (50, 50, 50))
+            screen.blit(self.text_volume_label, text_rect)
+            screen.blit(volume_text, (self.setting_box.centerx + 200, self.volume_bar_rect.y))
+
+            ## 禁音
+            if self.is_muted:
+                self.mute_button_on.draw(screen)
+            else:
+                self.mute_button_off.draw(screen)
+            status_text = f"Mute: {'ON' if self.is_muted else 'OFF'}"
+            text_surface = self.font_item.render(status_text, True, (0, 0, 0))
+            text_rect = text_surface.get_rect(center=(self.setting_box.centerx - 110, self.setting_box.centery-40))
+            screen.blit(text_surface, text_rect)
 
 
         ## bag ##
