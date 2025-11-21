@@ -15,11 +15,19 @@ class GameScene(Scene):
     online_manager: OnlineManager | None
     sprite_online: Sprite
 
+    '''check point 2 - 1: Overlay'''
     menu_button: Button
     is_menu_open: bool
     menu_box: pg.Rect
     close_menu_button: Button
 
+    '''check point 2 - 4: Setting Overlay'''
+    setting_button: Button
+    is_setting_open: bool
+    setting_box: pg.Rect
+    close_setting_button: Button
+
+    '''check point 2 - 3: Backpack Overlay'''
     bag_button: Button
     is_bag_open: bool
     bag_box: pg.Rect
@@ -49,8 +57,8 @@ class GameScene(Scene):
         self.is_menu_open = False
 
         self.menu_button = Button(
-            "UI/button_setting.png",
-            "UI/button_setting_hover.png",
+            "UI/button_load.png",
+            "UI/button_load_hover.png",
             px - 50, py - 50,
             35, 35,
             on_click = self.toggle_menu
@@ -73,13 +81,41 @@ class GameScene(Scene):
             on_click = self.toggle_menu
         )
 
+        ## 初始化 setting ##
+        self.is_setting_open = False
+
+        self.setting_button = Button(
+            "UI/button_setting.png",
+            "UI/button_setting_hover.png",
+            px - 50, py - 100,
+            35, 35,
+            on_click = self.toggle_setting
+        ) 
+
+        setting_box_width, setting_box_height = 600, 500
+        self.setting_box = pg.Rect(
+            (GameSettings.SCREEN_WIDTH - setting_box_width) // 2,
+            (GameSettings.SCREEN_HEIGHT - setting_box_height) // 2,
+            setting_box_width,
+            setting_box_height
+        )
+
+        self.close_setting_button = Button(
+            "UI/button_x.png",
+            "UI/button_x_hover.png",
+            self.setting_box.right - 45,
+            self.setting_box.y + 10,
+            35, 35,
+            on_click = self.toggle_setting
+        )
+
         ## 初始化 bag ##
         self.is_bag_open = False
 
         self.bag_button = Button(
             "UI/button_backpack.png",
             "UI/button_backpack_hover.png",
-            px - 50, py - 100,
+            px - 50, py - 150,
             35, 35,
             on_click = self.toggle_bag
         ) 
@@ -104,6 +140,10 @@ class GameScene(Scene):
     ## 切換 menu 開啟或關閉 ##
     def toggle_menu(self):      
         self.is_menu_open = not self.is_menu_open
+
+    ## 切換 setting 開啟或關閉 ##
+    def toggle_setting(self):      
+        self.is_setting_open = not self.is_setting_open
 
     ## 切換 bag 開啟或關閉 ##
     def toggle_bag(self):      
@@ -131,11 +171,15 @@ class GameScene(Scene):
     def update(self, dt: float):
 
         self.menu_button.update(dt)
+        self.setting_button.update(dt)
         self.bag_button.update(dt)
 
         ## menu 開啟時 ##
         if self.is_menu_open: 
             self.close_menu_button.update(dt)
+        ## setting 開啟時 ##
+        elif self.is_setting_open:
+            self.close_setting_button.update(dt)
         ## bag 開啟時 ##
         elif self.is_bag_open:
             self.close_bag_button.update(dt)
@@ -158,11 +202,6 @@ class GameScene(Scene):
                     self.game_manager.player.position.y,
                     self.game_manager.current_map.path_name
                 )
-
-    
-            
-            
-
         
         
     @override
@@ -203,6 +242,14 @@ class GameScene(Scene):
             pg.draw.rect(screen, (255, 153, 51), self.menu_box)
             pg.draw.rect(screen, (255, 178, 102), self.menu_box, 10) 
             self.close_menu_button.draw(screen)
+
+        ## setting ##
+        if self.is_setting_open:
+            self.draw_overlay(screen) #背景變暗
+            pg.draw.rect(screen, (255, 153, 51), self.setting_box)
+            pg.draw.rect(screen, (255, 178, 102), self.setting_box, 10) 
+            self.close_setting_button.draw(screen)
+
 
         ## bag ##
         if self.is_bag_open:
@@ -249,4 +296,5 @@ class GameScene(Scene):
 
         
         self.menu_button.draw(screen)
+        self.setting_button.draw(screen)
         self.bag_button.draw(screen)
