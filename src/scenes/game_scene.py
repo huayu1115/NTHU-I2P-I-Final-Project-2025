@@ -150,6 +150,28 @@ class GameScene(Scene):
         handle_y = bar_y + bar_height // 2 - handle_size // 2
         self.volume_handle_rect = pg.Rect(handle_x, handle_y, handle_size, handle_size)
 
+        
+        ## Save & Load ##
+        self.text_save_label = self.font_item.render("Save", True, (0, 0, 0))
+        self.save_button = Button(
+            "UI/button_load.png",
+            "UI/button_load_hover.png",
+            self.setting_box.centerx - 85,
+            self.setting_box.centerx - 100,
+            35, 35,
+            on_click = self.save_game
+        ) 
+
+        self.text_load_label = self.font_item.render("Load ", True, (0, 0, 0))
+        self.load_button = Button(
+            "UI/button_load.png",
+            "UI/button_load_hover.png",
+            self.setting_box.centerx + 25,
+            self.setting_box.centerx - 100,
+            35, 35,
+            on_click = self.load_game
+        ) 
+
         '''check point 2 - 3: Backpack Overlay 初始化 bag'''
         self.is_bag_open = False
 
@@ -198,15 +220,31 @@ class GameScene(Scene):
         overlay.fill((0, 0, 0, 150)) # RGBA, 150 代表透明度
         screen.blit(overlay, (0, 0))
 
+    ## 靜音控制 ##
     def toggle_mute(self):
-        # 恢復播放
         if self.is_muted:
             self.is_muted = False
             sound_manager.resume_all()  
-        # 暫停所有聲音
         else:
             self.is_muted = True
             sound_manager.pause_all()   
+    
+    ## 遊戲存檔 ##
+    def save_game(self):
+        save_path = "saves/game0.json"
+        self.game_manager.save(save_path)
+        Logger.info(f"Game saved to {save_path}")
+
+    ## 遊戲讀檔 ##
+    def load_game(self):
+        save_path = "saves/game0.json"
+        new_manager = GameManager.load(save_path)
+        
+        if new_manager:
+            self.game_manager = new_manager
+            Logger.info("Game Reloaded!")
+        else:
+            Logger.error("Save file not found!")
 
     @override
     def enter(self) -> None:
@@ -232,6 +270,8 @@ class GameScene(Scene):
         ## setting 開啟時 ##
         elif self.is_setting_open:
             self.close_setting_button.update(dt)
+            self.save_button.update(dt)
+            self.load_button.update(dt)
 
             ## 音量條 ##
             if pg.mouse.get_pressed()[0]:  
@@ -314,16 +354,30 @@ class GameScene(Scene):
             self.close_menu_button.draw(screen)
 
         ## setting ##
-        if self.is_setting_open:
+        elif self.is_setting_open:
             self.draw_overlay(screen) #背景變暗
             pg.draw.rect(screen, (255, 153, 51), self.setting_box)
             pg.draw.rect(screen, (255, 178, 102), self.setting_box, 10) 
             self.close_setting_button.draw(screen)
+            self.save_button.draw(screen)
+            self.load_button.draw(screen)
 
             # 標題
             text_surface = self.font_title.render("Setting", True, (0, 0, 0))
             text_rect = text_surface.get_rect(center=(self.setting_box.centerx, self.setting_box.top + 80))
             screen.blit(text_surface, text_rect)
+
+            # 文字 -- 音量條
+            text_rect = self.text_volume_label.get_rect(center=(self.setting_box.centerx - 120, self.volume_bar_rect.y - 20))
+            volume_text = self.font_item.render(f"{int(GameSettings.AUDIO_VOLUME * 100)}%", True, (50, 50, 50))
+            screen.blit(self.text_volume_label, text_rect)
+            screen.blit(volume_text, (self.setting_box.centerx + 200, self.volume_bar_rect.y))
+
+            # 文字 -- save & load
+            text_rect = self.text_save_label.get_rect(center=(self.setting_box.centerx - 125, self.setting_box.centerx - 85))
+            screen.blit(self.text_save_label, text_rect)
+            text_rect = self.text_load_label.get_rect(center=(self.setting_box.centerx, self.setting_box.centerx - 85))
+            screen.blit(self.text_load_label, text_rect)
 
             # 畫音量條
             pg.draw.rect(screen, (204, 102, 0), self.volume_bar_rect)  
@@ -340,12 +394,6 @@ class GameScene(Scene):
             pg.draw.rect(screen, (255, 255, 255), self.volume_handle_rect)
             pg.draw.rect(screen, (0, 0, 0), self.volume_handle_rect, 2)
 
-            # 文字 -- 音量條
-            text_rect = self.text_volume_label.get_rect(center=(self.setting_box.centerx - 120, self.volume_bar_rect.y - 20))
-            volume_text = self.font_item.render(f"{int(GameSettings.AUDIO_VOLUME * 100)}%", True, (50, 50, 50))
-            screen.blit(self.text_volume_label, text_rect)
-            screen.blit(volume_text, (self.setting_box.centerx + 200, self.volume_bar_rect.y))
-
             ## 禁音
             if self.is_muted:
                 self.mute_button_on.draw(screen)
@@ -358,7 +406,7 @@ class GameScene(Scene):
 
 
         ## bag ##
-        if self.is_bag_open:
+        elif self.is_bag_open:
             self.draw_overlay(screen)
             pg.draw.rect(screen, (255, 153, 51), self.bag_box)
             pg.draw.rect(screen, (255, 178, 102), self.bag_box, 10) 

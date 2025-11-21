@@ -3,6 +3,7 @@ from src.utils import Logger, GameSettings, Position, Teleport
 import json, os
 import pygame as pg
 from typing import TYPE_CHECKING
+import shutil
 
 if TYPE_CHECKING:
     from src.maps.map import Map
@@ -87,24 +88,74 @@ class GameManager:
         return False
         
     def save(self, path: str) -> None:
+        '''
+        check point 2 - 4: Setting Overlay 存檔功能
+        存檔功能: 先寫入暫存檔，確認寫入成功後再覆蓋原檔，避免寫入中斷導致檔案損毀
+        '''
+        tmp_path = f"{path}.tmp"
         try:
-            with open(path, "w") as f:
+            with open(tmp_path, "w") as f:
                 json.dump(self.to_dict(), f, indent=2)
+            if os.path.exists(path): # 如果寫入成功，覆蓋舊檔
+                os.remove(path)
+            os.rename(tmp_path, path)
             Logger.info(f"Game saved to {path}")
         except Exception as e:
+            if os.path.exists(tmp_path): # 如果失敗，刪除殘留的暫存檔
+                os.remove(tmp_path)
             Logger.warning(f"Failed to save game: {e}")
              
     @classmethod
     def load(cls, path: str) -> "GameManager | None":
-        if not os.path.exists(path):
-            Logger.error(f"No file found: {path}, ignoring load function")
-            return None
+        '''
+        check point 2 - 4: Setting Overlay 讀檔功能
+        讀檔功能: 如果檔案為空或是找不到檔案, 則從backup恢復
+        '''
+        data = None
+        backup_path = "saves/backup.json"
 
-        with open(path, "r") as f:
-            data = json.load(f)
+        if os.path.exists(path):
+            try:
+                with open(path, "r") as f:
+                    content = f.read()
+                    if not content.strip(): # 檢查檔案是否完全空白
+                        raise json.JSONDecodeError("Empty file", "", 0)                  
+                    f.seek(0)
+                    data = json.load(f)                 
+            except (json.JSONDecodeError, Exception) as e:
+                Logger.warning(f"Failed to load {path} (Error: {e}). Trying backup...")
+                data = None 
+        else:
+            Logger.warning(f"File {path} not found. Trying backup...")
+
+        ## 從備份恢復 game0.json
+        if data is None:
+            if os.path.exists(backup_path):
+                try:
+                    Logger.info(f"Loading from backup: {backup_path}")
+                    with open(backup_path, "r") as f:
+                        data = json.load(f)
+                    try:
+                        shutil.copy(backup_path, path) # 複製 backup.json 到 game0.json
+                        Logger.info(f"Restored {path} using {backup_path}")
+                    except Exception as copy_error:
+                        Logger.warning(f"Could not restore file: {copy_error}")
+
+                except Exception as e:
+                    Logger.error(f"Backup file is also corrupted or missing: {e}")
+                    return None
+            else:
+                Logger.error(f"No backup file found at {backup_path}")
+                return None
+
         return cls.from_dict(data)
 
     def to_dict(self) -> dict[str, object]:
+        '''
+        check point 2 - 4: Setting Overlay
+        將當前遊戲狀態轉換為符合 game0.json 格式的字典。
+        包含: Map 列表(含傳送點、敵人、該地圖玩家位置)、全域玩家資料、背包資料。
+        '''
         map_blocks: list[dict[str, object]] = []
         for key, m in self.maps.items():
             block = m.to_dict()
