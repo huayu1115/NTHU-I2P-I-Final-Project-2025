@@ -9,6 +9,7 @@ from src.core.services import sound_manager
 from src.sprites import Sprite
 from typing import override
 from src.interface.components import Button
+from src.core.services import input_manager, scene_manager
 
 class GameScene(Scene):
     game_manager: GameManager
@@ -300,8 +301,15 @@ class GameScene(Scene):
             # Update player and other data
             if self.game_manager.player:
                 self.game_manager.player.update(dt)
+
+            '''check point 2 - 5: Enemy Interaction'''
             for enemy in self.game_manager.current_enemy_trainers:
                 enemy.update(dt)
+                # 偵測是否發現玩家且玩家按下空白鍵
+                if enemy.detected and input_manager.key_pressed(pg.K_SPACE):
+                    Logger.info("Battle Triggered!")
+                    scene_manager.change_scene("battle")
+                    return 
                 
             # Update others
             self.game_manager.bag.update(dt)
@@ -312,6 +320,9 @@ class GameScene(Scene):
                     self.game_manager.player.position.y,
                     self.game_manager.current_map.path_name
                 )
+
+            
+
         
         
     @override
