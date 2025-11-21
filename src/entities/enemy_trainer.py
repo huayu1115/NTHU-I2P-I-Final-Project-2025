@@ -81,10 +81,31 @@ class EnemyTrainer(Entity):
             self.animation.switch("up")
         self.los_direction = self.direction
 
+    
+    '''check point 2 - 5: Enemy Interaction'''
     def _get_los_rect(self) -> pygame.Rect | None:
         '''
         TODO: Create hitbox to detect line of sight of the enemies towards the player
         '''
+        
+        if self.max_tiles is None or self.max_tiles <= 0:
+            return None
+        
+        ## 視線長度
+        distance = self.max_tiles * GameSettings.TILE_SIZE
+        x, y = self.position.x, self.position.y
+        size = GameSettings.TILE_SIZE
+        
+        ## 根據 NPC 面向方向產生視線 rect
+        if self.direction == Direction.RIGHT:
+            return pygame.Rect(x + size, y, distance, size)
+        elif self.direction == Direction.LEFT:
+            return pygame.Rect(x - distance, y, distance, size)
+        elif self.direction == Direction.DOWN:
+            return pygame.Rect(x, y + size, size, distance)
+        elif self.direction == Direction.UP:
+            return pygame.Rect(x, y - distance, size, distance)
+
         return None
 
     def _has_los_to_player(self) -> None:
@@ -100,7 +121,11 @@ class EnemyTrainer(Entity):
         TODO: Implement line of sight detection
         If it's detected, set self.detected to True
         '''
-        self.detected = False
+        ## 檢查玩家的 rect 是否與視線 rect 重疊
+        if los_rect.colliderect(player.animation.rect):
+            self.detected = True
+        else:
+            self.detected = False
 
     @classmethod
     @override
