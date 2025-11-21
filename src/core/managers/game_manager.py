@@ -152,18 +152,18 @@ class GameManager:
 
     def to_dict(self) -> dict[str, object]:
         '''
-        check point 2 - 4: Setting Overlay
-        將當前遊戲狀態轉換為符合 game0.json 格式的字典。
+        check point 2 - 4: Setting Overlay 保存玩家位置
+        將當前遊戲狀態轉換為符合 game0.json 格式的字典
         包含: Map 列表(含傳送點、敵人、該地圖玩家位置)、全域玩家資料、背包資料。
         '''
         map_blocks: list[dict[str, object]] = []
         for key, m in self.maps.items():
             block = m.to_dict()
             block["enemy_trainers"] = [t.to_dict() for t in self.enemy_trainers.get(key, [])]
-            spawn = self.player_spawns.get(key)
+            ## 保存玩家當下位置 ##
             block["player"] = {
-                "x": spawn["x"] / GameSettings.TILE_SIZE,
-                "y": spawn["y"] / GameSettings.TILE_SIZE
+                "x": int(self.player.position.x / GameSettings.TILE_SIZE),
+                "y": int(self.player.position.y / GameSettings.TILE_SIZE)
             }
             map_blocks.append(block)
         return {
