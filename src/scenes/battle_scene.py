@@ -7,6 +7,7 @@ from src.utils import GameSettings, Logger, Position
 from src.interface.components import Button
 from src.core.services import scene_manager
 from src.sprites import BackgroundSprite, Sprite
+from src.entities.monster import Monster
 
 class BattleScene(Scene):
     background: BackgroundSprite
@@ -17,14 +18,17 @@ class BattleScene(Scene):
     btn_run: Button
 
     ## 怪獸
-    player_sprite: Sprite | None 
-    enemy_sprite: Sprite | None 
+    player: Monster | None = None
+    enemy: Monster | None = None 
 
     def __init__(self):
         super().__init__()
         self.background = BackgroundSprite("backgrounds/background1.png")
         self.font = pg.font.Font("./assets/fonts/Minecraft.ttf", 24)
         self.game_manager = None 
+
+        self.turn_timer = 0.0
+        self.state = "PLAYER"
 
         ## 初始化儀表板 ##
         dashboard_height = 140
@@ -58,8 +62,15 @@ class BattleScene(Scene):
 
     ## 攻擊邏輯 ##    
     def player_attack(self):
+        if self.state != "PLAYER" or not self.enemy: 
+            return
+        
         Logger.info("Player chose to Fight!")
-        pass
+        damage = random.randint(15, 25)
+
+        self.enemy.take_damage(damage)
+        self.log_text = f"You dealt {damage} damage!"
+
 
     ## 逃跑邏輯 ##
     def run_away(self):
@@ -94,58 +105,26 @@ class BattleScene(Scene):
        
         self.game_manager = GameManager.load("saves/game0.json") # 讀取最新檔案
         
-        self.player_hp = 100
-        self.player_max_hp = 100
-        self.player_name = "Player"
-        self.enemy_hp = 100
-        self.enemy_name = "Wild Pokemon"
-
         if self.game_manager and self.game_manager.bag:
             monsters = getattr(self.game_manager.bag, "_monsters_data", [])
         
-        ## 設定玩家第一隻怪獸
-        if monsters:
-                p_data = monsters[0] 
-                self.player_hp = p_data.get("hp", 100)
-                self.player_max_hp = p_data.get("max_hp", 100)
-                self.player_name = p_data.get("name", "Unknown")
+            if monsters:
+                self.player = Monster(monsters[0], is_player=True)
                 
-                path = p_data.get("sprite_path", "")
-                if path:
-                    path = path.replace("menu_sprites/", "sprites/")
-                    path = path.replace("menusprite", "sprite")
-                    try:
-                        self.player_sprite = self._create_battle_sprite(
-                        path, 
-                        Position(100, self.dashboard_rect.top - 300), 
-                        is_player=True
-                        )
-                    except Exception as e:
-                        Logger.error(f"Failed to load player sprite: {e}")
-
-                # 設定敵人，從背包隨機挑一隻當對手
-                e_data = random.choice(monsters) 
-                self.enemy_name = e_data.get("name", "Wild Pokemon")
+                # 從背包隨機選一隻當作敵人
+                enemy_data = random.choice(monsters)
+                self.enemy = Monster(enemy_data, is_player=False)
                 
-                path = e_data.get("sprite_path", "")
-                if path:
-                    path = path.replace("menu_sprites/", "sprites/")
-                    path = path.replace("menusprite", "sprite")
-                    try:
-                       self.enemy_sprite = self._create_battle_sprite(
-                        path, 
-                        Position(GameSettings.SCREEN_WIDTH - 450, 80), 
-                        is_player=False
-                        )      
-                    except Exception as e:
-                        Logger.error(f"Failed to load enemy sprite: {e}")
+                self.log_text = f"A wild {self.enemy.name} appeared!"
+            else:
+                self.player = None
+                self.enemy = None
+        
+        self.state = "PLAYER"
 
-        # 設置狀態
-        self.state = "PLAYER_TURN"
-        self.log_text = f"A wild {self.enemy_name} appeared!"
 
     def update(self, dt: float):
-        if self.state == "PLAYER_TURN":
+        if self.state == "PLAYER":
             self.btn_fight.update(dt)
             self.btn_run.update(dt)
        
@@ -156,7 +135,7 @@ class BattleScene(Scene):
         pg.draw.rect(screen, (40, 40, 40), self.dashboard_rect)
         pg.draw.rect(screen, (255, 255, 255), self.dashboard_rect, 3)
 
-        if self.state == "PLAYER_TURN":
+        if self.state == "PLAYER":
             self.btn_fight.draw(screen)
             self.btn_run.draw(screen)
 
@@ -169,35 +148,14 @@ class BattleScene(Scene):
             screen.blit(txt_run, txt_rect)
          
         ## 繪製對手 ##
-        self.enemy_sprite.draw(screen)
-        self.draw_hp_bar(screen, self.enemy_sprite.rect.x + 10, 70, self.enemy_hp, 100, "Wild Trainer")
-
-        ## 繪製玩家 ##
-        self.player_sprite.draw(screen)
-        self.draw_hp_bar(screen, self.player_sprite.rect.x + 50, self.player_sprite.rect.top + 80, self.player_hp, self.player_max_hp, "My Pokemon")
-
-    ## 切割 sprite 的輔助函式
-    def _create_battle_sprite(self, path: str, pos: Position, is_player: bool) -> Sprite | None:
-        try:
-            temp_sprite = Sprite(path) 
-            full_img = temp_sprite.image
-            sheet_w = full_img.get_width()
-            sheet_h = full_img.get_height()
-            single_w = sheet_w // 2
-
-            ## 對手取左半部圖片，玩家取右半部圖片
-            start_x = single_w if is_player else 0
-            crop_rect = pg.Rect(start_x, 0, single_w, sheet_h)
+        if self.enemy:
+            self.enemy.draw(screen)
+            rect = self.enemy.sprite.rect if self.enemy.sprite else pg.Rect(0,0,0,0)
+            self.draw_hp_bar(screen, rect.x + 10, 70, self.enemy.hp, self.enemy.max_hp, self.enemy.name)
             
-            cropped_img = full_img.subsurface(crop_rect)
-
-            final_img = pg.transform.scale(cropped_img, (300, 300))
-            sprite = Sprite(path)
-            sprite.image = final_img
-            sprite.rect = final_img.get_rect()
-            sprite.update_pos(pos)
-            return sprite
-
-        except Exception as e:
-            Logger.error(f"Failed to create battle sprite from {path}: {e}")
-            return None
+        ## 繪製玩家 ##
+        if self.player:
+            self.player.draw(screen)
+            rect = self.player.sprite.rect if self.player.sprite else pg.Rect(0,0,0,0)
+            self.draw_hp_bar(screen, rect.x + 50, rect.top + 80, self.player.hp, self.player.max_hp, self.player.name)
+   
