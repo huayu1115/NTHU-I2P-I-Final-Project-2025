@@ -308,6 +308,9 @@ class GameScene(Scene):
                 # 偵測是否發現玩家且玩家按下空白鍵
                 if enemy.detected and input_manager.key_pressed(pg.K_SPACE):
                     Logger.info("Battle Triggered!")
+                    # 將當前的 game_manager 傳過去
+                    battle_scene = scene_manager._scenes["battle"]
+                    battle_scene.game_manager = self.game_manager 
                     scene_manager.change_scene("battle")
                     return 
                 
