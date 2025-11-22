@@ -50,11 +50,19 @@ class BattleScene(Scene):
             btn_width, btn_height,
             on_click=self.player_attack
         )
-        
+
+        # 切換按鈕
+        self.btn_switch = Button(
+            "UI/raw/UI_Flat_Button02a_3.png", "UI/raw/UI_Flat_Button02a_1.png", 
+            300, btn_y, 
+            btn_width, btn_height,
+            on_click=self.switch_monster
+        )
+
         # 逃跑按鈕
         self.btn_run = Button(
             "UI/raw/UI_Flat_Button02a_3.png", "UI/raw/UI_Flat_Button02a_1.png", 
-            300, btn_y, 
+            500, btn_y, 
             btn_width, btn_height,
             on_click=self.run_away
         )
@@ -94,6 +102,58 @@ class BattleScene(Scene):
             Logger.info(f"Battle ended. HP saved: {self.player.hp}")
         scene_manager.change_scene("game")
 
+    ## 切換怪獸邏輯 ##
+    def switch_monster(self):
+        if self.state != "PLAYER": 
+            return
+        if not self.all_monsters: 
+            return
+
+        found_index = -1
+        total_monsters = len(self.all_monsters)
+
+        for i in range(1, total_monsters):
+            check_index = (self.current_monster_index + i) % total_monsters
+            if self.all_monsters[check_index].get("hp", 0) > 0:
+                found_index = check_index
+                break
+
+        if found_index == -1:
+            self.log_text = "No other Pokemon available!"
+            return
+
+        if self.player:
+            self.player.data["hp"] = self.player.hp
+
+        self.current_monster_index = found_index
+        new_data = self.all_monsters[found_index]
+        self.player = Monster(new_data, is_player=True)
+
+        self.log_text = f"Go! {self.player.name}!"
+        self.state = "ENEMY"
+        self.turn_timer = 0
+
+   ## 自動切換邏輯: 當前怪獸死掉時觸發 ##
+    def _auto_switch(self) -> bool:
+        if self.player:
+            self.player.data["hp"] = 0
+
+        found_index = -1
+        for i, m_data in enumerate(self.all_monsters):
+            if m_data.get("hp", 0) > 0:
+                found_index = i
+                break
+        
+        if found_index == -1:
+            return False 
+
+        self.current_monster_index = found_index
+        new_data = self.all_monsters[found_index]
+        self.player = Monster(new_data, is_player=True)
+        
+        self.log_text = f"Go {self.player.name}!"
+        return True
+
     def enter(self):
         # 檢查是否成功接收到 game_manager
         if self.game_manager is None:
@@ -102,26 +162,47 @@ class BattleScene(Scene):
         
         if self.game_manager and self.game_manager.bag:
             monsters = getattr(self.game_manager.bag, "_monsters_data", [])
-        
+            
+            self.all_monsters = monsters 
+            self.current_monster_index = -1
+            
             if monsters:
-                self.player = Monster(monsters[0], is_player=True)
+                found_alive = False
+                for i, m_data in enumerate(monsters):
+                    if m_data.get("hp", 0) > 0:
+                        self.player = Monster(m_data, is_player=True)
+                        self.current_monster_index = i
+                        found_alive = True
+                        break
+                if not found_alive:
+                    Logger.warning("All monsters are dead!")
+                    self.log_text = "You have no energy to fight..."
+                    self.player = None
+                    self.enemy = None
+                    self.state = "LOST"
+                    self.turn_timer = 0 
+                    return
                 
                 # 從背包隨機選一隻當作敵人
                 enemy_data = random.choice(monsters)
                 self.enemy = Monster(enemy_data, is_player=False)
-                
+                self.enemy.hp = self.enemy.max_hp
                 self.log_text = f"A wild {self.enemy.name} appeared!"
+                self.state = "PLAYER"
+
             else:
                 self.player = None
                 self.enemy = None
+                self.state = "LOST"
         
-        self.state = "PLAYER"
+        
 
     ## update 支援四種狀態 ##
     def update(self, dt: float):
         if self.state == "PLAYER":
             self.btn_fight.update(dt)
             self.btn_run.update(dt)
+            self.btn_switch.update(dt)
         elif self.state == "ENEMY":
             self.turn_timer += dt
             if self.turn_timer > 1.0:
@@ -129,10 +210,14 @@ class BattleScene(Scene):
                     dmg = random.randint(10, 20)
                     self.player.take_damage(dmg)
                     self.log_text = f"{self.enemy.name} attacked! ({dmg} dmg)"
+                    
                     if self.player.hp <= 0:
                         self.player.hp = 0
-                        self.state = "LOST"
-                        self.log_text = "You fainted..."
+                        if self._auto_switch():
+                            self.state = "PLAYER"
+                        else:
+                            self.state = "LOST"
+                            self.log_text = "You fainted..."
                     else:
                         self.state = "PLAYER"
                 self.turn_timer = 0
@@ -151,14 +236,13 @@ class BattleScene(Scene):
         if self.state == "PLAYER":
             self.btn_fight.draw(screen)
             self.btn_run.draw(screen)
+            self.btn_switch.draw(screen)
 
-            txt_fight = self.font.render("Fight", True, (0, 0, 0))
-            txt_rect = txt_fight.get_rect(center=self.btn_fight.hitbox.center)
-            screen.blit(txt_fight, txt_rect)
-
-            txt_run = self.font.render("Run", True, (0, 0, 0))
-            txt_rect = txt_run.get_rect(center=self.btn_run.hitbox.center)
-            screen.blit(txt_run, txt_rect)
+            # 繪製按鈕文字 (使用兼容寫法)
+            for btn, text in [(self.btn_fight, "Fight"), (self.btn_switch, "Switch"), (self.btn_run, "Run")]:
+                txt_surf = self.font.render(text, True, (0, 0, 0))
+                rect = getattr(btn, 'hitbox', btn.hitbox)
+                screen.blit(txt_surf, txt_surf.get_rect(center=rect.center))
          
         ## 繪製對手 ##
         if self.enemy:
