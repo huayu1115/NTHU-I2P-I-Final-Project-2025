@@ -19,3 +19,9 @@ __all__ = [
     "Key",
     "Teleport",
 ]
+
+from enum import Enum
+
+class BattleType(Enum):
+    WILD = "wild"
+    TRAINER = "trainer"

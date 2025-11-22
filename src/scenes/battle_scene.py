@@ -1,6 +1,7 @@
 '''check point 2 - 5: Enemy Interaction'''
 import pygame as pg
 import random
+from src.utils import BattleType
 from src.scenes.scene import Scene
 from src.core import GameManager
 from src.utils import GameSettings, Logger, Position
@@ -12,11 +13,15 @@ from src.entities.monster import Monster
 from src.interface.health_bar import HealthBar
 from src.interface.battle_dashboard import BattleDashboard
 
+
 class BattleScene(Scene):
     background: BackgroundSprite
+    font: pg.font.Font
+
     dashboard: BattleDashboard
     hp_bar: HealthBar
-    font: pg.font.Font
+    
+    battle_type: BattleType = BattleType.WILD
 
     player: Monster | None = None
     enemy: Monster | None = None 
@@ -36,8 +41,44 @@ class BattleScene(Scene):
             self.font,
             on_fight=self.player_attack,
             on_switch=self.switch_monster,
-            on_run=self.run_away
+            on_run=self.run_away,
+            on_catch=self.try_catch_monster
         )
+
+    ## 初始化戰鬥 ##
+    def setup_battle(self, game_manager, enemy_data, battle_type: BattleType):
+
+        self.game_manager = game_manager
+        self.battle_type = battle_type
+        
+        self.enemy = Monster(enemy_data, is_player=False)
+        self.enemy.hp = self.enemy.max_hp
+
+        if self.battle_type == BattleType.WILD:
+            self.log_text = f"A wild {self.enemy.name} appeared!"
+            self.dashboard.show_catch_button(True) 
+        else:
+            self.log_text = f"Trainer wants to battle!"
+            self.dashboard.show_catch_button(False)
+
+        self.state = "PLAYER"
+
+    ## 捕捉邏輯 ##
+    def try_catch_monster(self):
+        if self.state != "PLAYER" or not self.enemy:
+            return
+        Logger.info("Player threw a Ball!")
+        self.state = "WON"
+        self.log_text = f"Gotcha! {self.enemy.name} was caught!"
+        if self.game_manager and self.game_manager.bag:
+            # 複製怪獸資料並更新當前血量
+            data = self.enemy.data.copy() 
+            data["hp"] = self.enemy.hp    
+            # 加入背包列表
+            self.game_manager.bag._monsters_data.append(data)
+            Logger.info(f"Added {self.enemy.name} to bag.")
+
+        self.turn_timer = 0
 
     ## 攻擊邏輯 ##    
     def player_attack(self):
@@ -146,25 +187,9 @@ class BattleScene(Scene):
                         found_alive = True
                         break
                 if not found_alive:
-                    Logger.warning("All monsters are dead!")
                     self.log_text = "You have no energy to fight..."
-                    self.player = None
-                    self.enemy = None
                     self.state = "LOST"
-                    self.turn_timer = 0 
-                    return
-                
-                # 從背包隨機選一隻當作敵人
-                enemy_data = random.choice(monsters)
-                self.enemy = Monster(enemy_data, is_player=False)
-                self.enemy.hp = self.enemy.max_hp
-                self.log_text = f"A wild {self.enemy.name} appeared!"
-                self.state = "PLAYER"
-
-            else:
-                self.player = None
-                self.enemy = None
-                self.state = "LOST"
+                return
         
     ## update 支援四種狀態 ##
     def update(self, dt: float):

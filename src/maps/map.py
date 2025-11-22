@@ -13,6 +13,7 @@ class Map:
     # Rendering Properties
     _surface: pg.Surface
     _collision_map: list[pg.Rect]
+    _grass_map: list[pg.Rect]
 
     def __init__(self, path: str, tp: list[Teleport], spawn: Position):
         self.path_name = path
@@ -28,6 +29,7 @@ class Map:
         self._render_all_layers(self._surface)
         # Prebake the collision map
         self._collision_map = self._create_collision_map()
+        self._grass_map = self._create_grass_map()
 
     def update(self, dt: float):
         return
@@ -39,6 +41,9 @@ class Map:
         if GameSettings.DRAW_HITBOXES:
             for rect in self._collision_map:
                 pg.draw.rect(screen, (255, 0, 0), camera.transform_rect(rect), 1)
+
+            for rect in self._grass_map:
+                pg.draw.rect(screen, (0, 255, 0), camera.transform_rect(rect), 1)    
         
     def check_collision(self, rect: pg.Rect) -> bool:
         '''
@@ -52,7 +57,10 @@ class Map:
                 return True
 
         return False
-        
+    
+    def check_in_grass(self, rect: pg.Rect) -> bool:
+        return rect.collidelist(self._grass_map) != -1
+
     def check_teleport(self, pos: Position) -> Teleport | None:
         '''[TODO HACKATHON 6] 
         Teleportation: Player can enter a building by walking into certain tiles defined inside saves/*.json, and the map will be changed
@@ -113,6 +121,18 @@ class Map:
                         rect = pg.Rect(rect_x, rect_y, GameSettings.TILE_SIZE, GameSettings.TILE_SIZE)
                         rects.append(rect)
 
+        return rects
+    
+    def _create_grass_map(self) -> list[pg.Rect]:
+        rects = []
+        for layer in self.tmxdata.visible_layers:
+            if isinstance(layer, pytmx.TiledTileLayer) and "bush" in layer.name.lower():
+                for x, y, gid in layer:
+                    if gid != 0:
+                        rect_x = x * GameSettings.TILE_SIZE
+                        rect_y = y * GameSettings.TILE_SIZE
+                        rect = pg.Rect(rect_x, rect_y, GameSettings.TILE_SIZE, GameSettings.TILE_SIZE)
+                        rects.append(rect)
         return rects
 
     @classmethod

@@ -1,6 +1,8 @@
 import pygame as pg
 import threading
 import time
+import random
+from src.utils import BattleType
 
 from src.scenes.scene import Scene
 from src.core import GameManager, OnlineManager
@@ -134,15 +136,43 @@ class GameScene(Scene):
             if self.game_manager.player:
                 self.game_manager.player.update(dt)
 
+                player = self.game_manager.player
+                is_moving = player.dis.x != 0 or player.dis.y != 0
+                
+                # 檢查是否踩在草叢上，縮小判定範圍
+                hitbox = player.animation.rect.inflate(-10, -10)
+                in_grass = self.game_manager.current_map.check_in_grass(hitbox)
+
+                if is_moving and in_grass:
+                    if random.random() < 0.05: 
+                        Logger.info("Wild Monster Encountered!")
+                        
+                        # 將當前的 game_manager 傳過去，並從背包中隨機選一隻當作敵人
+                        enemy_data = random.choice(self.game_manager.bag._monsters_data)
+                        battle_scene = scene_manager._scenes["battle"]    
+                        battle_scene.setup_battle(
+                            self.game_manager, 
+                            enemy_data,
+                            BattleType.WILD
+                        )
+                        scene_manager.change_scene("battle")
+                        return
+
             '''check point 2 - 5: Enemy Interaction'''
             for enemy in self.game_manager.current_enemy_trainers:
                 enemy.update(dt)
                 # 偵測是否發現玩家且玩家按下空白鍵
                 if enemy.detected and input_manager.key_pressed(pg.K_SPACE):
                     Logger.info("Battle Triggered!")
-                    # 將當前的 game_manager 傳過去
-                    battle_scene = scene_manager._scenes["battle"]
-                    battle_scene.game_manager = self.game_manager 
+                
+                    # 將當前的 game_manager 傳過去，並從背包中隨機選一隻當作敵人
+                    enemy_data = random.choice(self.game_manager.bag._monsters_data)
+                    battle_scene = scene_manager._scenes["battle"]    
+                    battle_scene.setup_battle(
+                        self.game_manager, 
+                        enemy_data,
+                        BattleType.TRAINER
+                    )
                     scene_manager.change_scene("battle")
                     return 
                 
