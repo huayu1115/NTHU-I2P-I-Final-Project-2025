@@ -25,6 +25,7 @@ class GameManager:
     should_change_scene: bool
     next_map: str
     player_last_positions: dict[str, Position]
+    player_spawns: dict[str, Position]
     
     def __init__(self, maps: dict[str, Map], start_map: str, 
                  player: Player | None,
@@ -43,6 +44,7 @@ class GameManager:
         self.should_change_scene = False
         self.next_map = ""
         self.player_last_positions = {}
+        self.player_spawns = {}
         
     @property
     def current_map(self) -> Map:
@@ -157,15 +159,26 @@ class GameManager:
         包含: Map 列表(含傳送點、敵人、該地圖玩家位置)、全域玩家資料、背包資料。
         '''
         map_blocks: list[dict[str, object]] = []
+
+        if self.player: # 將當前位置存入 player_spawns 字典
+            self.player_spawns[self.current_map_key] = self.player.position
+
         for key, m in self.maps.items():
             block = m.to_dict()
             block["enemy_trainers"] = [t.to_dict() for t in self.enemy_trainers.get(key, [])]
-            ## 保存玩家當下位置 ##
+
+            # 取得該地圖對應的座標
+            saved_pos = self.player_spawns.get(key)
+            if saved_pos is None:
+                saved_pos = m.spawn
+
+            ## 將像素座標轉回網格座標存入 JSON
             block["player"] = {
-                "x": int(self.player.position.x / GameSettings.TILE_SIZE),
-                "y": int(self.player.position.y / GameSettings.TILE_SIZE)
+                "x": int(saved_pos.x / GameSettings.TILE_SIZE),
+                "y": int(saved_pos.y / GameSettings.TILE_SIZE)
             }
             map_blocks.append(block)
+
         return {
             "map": map_blocks,
             "current_map": self.current_map_key,
@@ -202,6 +215,7 @@ class GameManager:
             trainers,
             bag=None
         )
+        gm.player_spawns = player_spawns
         gm.current_map_key = current_map
         
         Logger.info("Loading enemy trainers")

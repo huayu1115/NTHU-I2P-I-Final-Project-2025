@@ -140,6 +140,7 @@ class Map:
         tp = [Teleport.from_dict(t) for t in data["teleport"]]
         pos = Position(data["player"]["x"] * GameSettings.TILE_SIZE, data["player"]["y"] * GameSettings.TILE_SIZE)
         return cls(data["path"], tp, pos)
+        
 
     def to_dict(self):
         return {

@@ -10,8 +10,8 @@
         }
       ],
       "player": {
-        "x": 29,
-        "y": 30
+        "x": 23,
+        "y": 26
       },
       "enemy_trainers": [
         {
@@ -57,16 +57,16 @@
         }
       ],
       "player": {
-        "x": 29,
-        "y": 30
+        "x": 12,
+        "y": 12
       },
       "enemy_trainers": []
     }
   ],
   "current_map": "map.tmx",
   "player": {
-    "x": 29.295356564548655,
-    "y": 30.17515656965039
+    "x": 23.85478557107513,
+    "y": 26.62953766949345
   },
   "bag": {
     "monsters": [
@@ -111,6 +111,13 @@
         "max_hp": 220,
         "level": 40,
         "sprite_path": "menu_sprites/menusprite6.png"
+      },
+      {
+        "name": "Blastoise",
+        "hp": 180,
+        "max_hp": 180,
+        "level": 32,
+        "sprite_path": "menu_sprites/menusprite3.png"
       }
     ],
     "items": [
