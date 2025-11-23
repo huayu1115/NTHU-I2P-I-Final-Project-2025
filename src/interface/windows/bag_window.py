@@ -12,6 +12,28 @@ class BagWindow(Window):
         self.font_title = font_title
         self.font_item = font_item
 
+        # 圖片快取字典
+        self.sprite_cache = {}
+
+
+    # 輔助函式：獲取快取圖片
+    def get_cached_sprite(self, path: str, size: int):
+        if path not in self.sprite_cache:
+            try:
+                img = load_img(path)
+                img = pg.transform.scale(img, (size, size))
+                self.sprite_cache[path] = img
+            except Exception as e:
+                Logger.warning(f"Failed to load sprite {path}: {e}")
+                surf = pg.Surface((size, size)) # 產生一個替代用的色塊
+                surf.fill((150, 150, 150))
+                self.sprite_cache[path] = surf
+        
+        return self.sprite_cache[path]
+    
+    def update(self, dt: float):
+        super().update(dt)
+    
 
     def draw(self, screen: pg.Surface):
         self.draw_background(screen)
@@ -57,12 +79,10 @@ class BagWindow(Window):
             icon_x = self.rect.centerx + 20
 
             if sprite_path:
-                try: 
-                    image = load_img(sprite_path)
-                    image = pg.transform.scale(image, (icon_size, icon_size))
-                    screen.blit(image, (icon_x, current_y))
-                except Exception as e:
-                    pg.draw.rect(screen, (150, 150, 150), (icon_x, current_y, icon_size, icon_size))
+                image = self.get_cached_sprite(sprite_path, icon_size)
+                screen.blit(image, (icon_x, current_y))
+            else:
+                pg.draw.rect(screen, (150, 150, 150), (icon_x, current_y, icon_size, icon_size))
 
             # 怪獸文字資訊
             text_x = icon_x + icon_size + 10
