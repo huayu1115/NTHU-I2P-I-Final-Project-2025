@@ -175,7 +175,13 @@ class GameScene(Scene):
                     )
                     scene_manager.change_scene("battle")
                     return 
-                
+
+            for merchant in self.game_manager.merchants.get(self.game_manager.current_map_key, []):
+                merchant.update(dt)
+                if merchant.detected and input_manager.key_pressed(pg.K_SPACE):
+                    Logger.info("Store Triggered!")
+                    ## todo: open store window
+
             # Update others
             self.game_manager.bag.update(dt)
             
@@ -206,6 +212,9 @@ class GameScene(Scene):
 
         for enemy in self.game_manager.current_enemy_trainers:
             enemy.draw(screen, camera)
+
+        for merchant in self.game_manager.merchants.get(self.game_manager.current_map_key, []):
+            merchant.draw(screen, camera)
 
         self.game_manager.bag.draw(screen)
         

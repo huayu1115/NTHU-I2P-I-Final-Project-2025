@@ -9,12 +9,14 @@ if TYPE_CHECKING:
     from src.maps.map import Map
     from src.entities.player import Player
     from src.entities.enemy_trainer import EnemyTrainer
+    from src.entities.merchant import Merchant
     from src.data.bag import Bag
 
 class GameManager:
     # Entities
     player: Player | None
     enemy_trainers: dict[str, list[EnemyTrainer]]
+    merchants: dict[str, list[Merchant]]
     bag: "Bag"
     
     # Map properties
@@ -30,6 +32,7 @@ class GameManager:
     def __init__(self, maps: dict[str, Map], start_map: str, 
                  player: Player | None,
                  enemy_trainers: dict[str, list[EnemyTrainer]], 
+                 merchants: dict[str, list[Merchant]],
                  bag: Bag | None = None):
                      
         from src.data.bag import Bag
@@ -38,6 +41,7 @@ class GameManager:
         self.current_map_key = start_map
         self.player = player
         self.enemy_trainers = enemy_trainers
+        self.merchants = merchants
         self.bag = bag if bag is not None else Bag([], [])
         
         # Check If you should change scene
@@ -88,7 +92,9 @@ class GameManager:
         for entity in self.enemy_trainers[self.current_map_key]:
             if rect.colliderect(entity.animation.rect):
                 return True
-        
+        for entity in self.merchants[self.current_map_key]:
+            if rect.colliderect(entity.animation.rect):
+                return True
         return False
         
     def save(self, path: str) -> None:
@@ -168,7 +174,7 @@ class GameManager:
         for key, m in self.maps.items():
             block = m.to_dict()
             block["enemy_trainers"] = [t.to_dict() for t in self.enemy_trainers.get(key, [])]
-
+            block["merchants"] = [t.to_dict() for t in self.merchants.get(key, [])]
             # 取得該地圖對應的座標
             saved_pos = self.player_spawns.get(key)
             if saved_pos is None:
@@ -193,6 +199,7 @@ class GameManager:
         from src.maps.map import Map
         from src.entities.player import Player
         from src.entities.enemy_trainer import EnemyTrainer
+        from src.entities.merchant import Merchant
         from src.data.bag import Bag
         
         Logger.info("Loading maps")
@@ -200,6 +207,7 @@ class GameManager:
         maps: dict[str, Map] = {}
         player_spawns: dict[str, Position] = {}
         trainers: dict[str, list[EnemyTrainer]] = {}
+        merchants: dict[str, list[Merchant]] = {}
 
         for entry in maps_data:
             path = entry["path"]
@@ -215,6 +223,7 @@ class GameManager:
             maps, current_map,
             None, # Player
             trainers,
+            merchants,
             bag=None
         )
         gm.player_spawns = player_spawns
@@ -224,6 +233,11 @@ class GameManager:
         for m in data["map"]:
             raw_data = m["enemy_trainers"]
             gm.enemy_trainers[m["path"]] = [EnemyTrainer.from_dict(t, gm) for t in raw_data]
+        
+        Logger.info("Loading merchants")
+        for m in data["map"]:
+            raw_data = m["merchants"]
+            gm.merchants[m["path"]] = [Merchant.from_dict(t, gm) for t in raw_data]
         
         Logger.info("Loading Player")
         if data.get("player"):

@@ -7,6 +7,15 @@
         { "x": 54, "y": 16, "classification": "stationary", "facing": "UP", "max_tiles": 2 },
         { "x": 31, "y": 31, "classification": "stationary", "facing": "UP", "max_tiles": 2 }
       ],
+      "merchants": [
+        { "x": 22, "y": 29, "facing": "DOWN", "max_tiles": 2,
+          "goods": [
+            { "name": "Potion", "price": 200, "description": "Heals 20 HP" },
+            { "name": "Pokeball", "price": 500, "description": "Catches monsters" },
+            { "name": "Antidote", "price": 100, "description": "Cures poison" }
+          ]
+        }
+      ],
       "teleport": [
         { "x": 24, "y": 23, "destination": "gym.tmx" },
         { "x": 38, "y": 26, "destination": "store.tmx" }
@@ -25,6 +34,7 @@
       ],
       "roaming_mobs": [],
       "enemy_trainers": [],
+      "merchants": [],
       "player": {
         "x": 12,
         "y": 11
@@ -39,6 +49,15 @@
       ],
       "roaming_mobs": [],
       "enemy_trainers": [],
+      "merchants": [
+        { "x": 7, "y": 5, "facing": "DOWN", "max_tiles": 2,
+          "goods": [
+            { "name": "Potion", "price": 200, "description": "Heals 20 HP" },
+            { "name": "Pokeball", "price": 500, "description": "Catches monsters" },
+            { "name": "Antidote", "price": 100, "description": "Cures poison" }
+          ]
+        }
+      ],
       "player": {
         "x": 8,
         "y": 9
