@@ -116,6 +116,20 @@ class Merchant(Entity):
                 facing = Direction[facing_val]
             elif isinstance(facing_val, Direction):
                 facing = facing_val
+
+
+        # 看商人有賣甚麼，並從資料庫查找商品資訊
+        raw_goods_ids = data.get("goods", [])
+        resolved_goods = []
+
+        for item_id in raw_goods_ids:
+            item_info = game_manager.item_database.get(item_id)
+            if item_info:
+                item_copy = item_info.copy()
+                item_copy["id"] = item_id 
+                resolved_goods.append(item_copy)
+            else:
+                Logger.warning(f"Merchant has unknown item ID: {item_id}")
                 
         return cls(
             data["x"] * GameSettings.TILE_SIZE,
@@ -123,7 +137,7 @@ class Merchant(Entity):
             game_manager,
             max_tiles,
             facing,
-            data.get("goods", [])
+            resolved_goods
         )
 
     @override
@@ -131,5 +145,5 @@ class Merchant(Entity):
         base: dict[str, object] = super().to_dict()
         base["facing"] = self.direction.name
         base["max_tiles"] = self.max_tiles
-        base["goods"] = self.goods
+        base["goods"] = [item.get("id") for item in self.goods if "id" in item]
         return base

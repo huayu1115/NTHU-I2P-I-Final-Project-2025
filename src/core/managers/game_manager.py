@@ -18,6 +18,7 @@ class GameManager:
     enemy_trainers: dict[str, list[EnemyTrainer]]
     merchants: dict[str, list[Merchant]]
     bag: "Bag"
+    item_database: dict[str, dict]
     
     # Map properties
     current_map_key: str
@@ -43,6 +44,7 @@ class GameManager:
         self.enemy_trainers = enemy_trainers
         self.merchants = merchants
         self.bag = bag if bag is not None else Bag([], [])
+        self.item_database = self._load_item_database()
         
         # Check If you should change scene
         self.should_change_scene = False
@@ -248,3 +250,16 @@ class GameManager:
         gm.bag = Bag.from_dict(data.get("bag", {})) if data.get("bag") else _Bag([], [])
 
         return gm
+    
+    def _load_item_database(self) -> dict:
+        try:
+            path = "src/data/items.json"
+            if os.path.exists(path):
+                with open(path, "r", encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                Logger.warning(f"Item database not found at {path}")
+                return {}
+        except Exception as e:
+            Logger.error(f"Failed to load item database: {e}")
+            return {}

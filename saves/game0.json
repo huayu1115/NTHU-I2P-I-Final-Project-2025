@@ -9,11 +9,7 @@
       ],
       "merchants": [
         { "x": 22, "y": 29, "facing": "DOWN", "max_tiles": 2,
-          "goods": [
-            { "name": "Potion", "price": 200, "description": "Heals 20 HP" },
-            { "name": "Pokeball", "price": 500, "description": "Catches monsters" },
-            { "name": "Antidote", "price": 100, "description": "Cures poison" }
-          ]
+          "goods": ["potion", "pokeball"]
         }
       ],
       "teleport": [
@@ -51,11 +47,7 @@
       "enemy_trainers": [],
       "merchants": [
         { "x": 7, "y": 5, "facing": "DOWN", "max_tiles": 2,
-          "goods": [
-            { "name": "Potion", "price": 200, "description": "Heals 20 HP" },
-            { "name": "Pokeball", "price": 500, "description": "Catches monsters" },
-            { "name": "Antidote", "price": 100, "description": "Cures poison" }
-          ]
+          "goods": ["potion", "pokeball"]
         }
       ],
       "player": {
@@ -80,7 +72,7 @@
     ],
     "items": [
       { "name": "Potion",      "count": 5,  "sprite_path": "ingame_ui/potion.png" },
-      { "name": "Coins",       "count": 3,  "sprite_path": "ingame_ui/coin.png" },
+      { "name": "Coins",       "count": 20,  "sprite_path": "ingame_ui/coin.png" },
       { "name": "Pokeball",    "count": 10, "sprite_path": "ingame_ui/ball.png" }
     ]
   }
