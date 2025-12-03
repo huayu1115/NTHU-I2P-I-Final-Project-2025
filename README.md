@@ -13,7 +13,7 @@ This Project is inspired by classic pokemon game
     source venv/bin/activate
     
     # On windows
-    ./venv/Scripts/activate
+    .\\venv\\Scripts\\activate
     ```
 2. (Required) Install the required libraries
     ```bash
