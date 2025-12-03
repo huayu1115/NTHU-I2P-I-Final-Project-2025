@@ -16,6 +16,7 @@ from src.core.services import input_manager, scene_manager
 from src.interface.windows.menu_window import MenuWindow
 from src.interface.windows.bag_window import BagWindow
 from src.interface.windows.setting_window import SettingWindow
+from src.interface.windows.shop_window import ShopWindow
 
 class GameScene(Scene):
     game_manager: GameManager
@@ -33,6 +34,9 @@ class GameScene(Scene):
     '''check point 2 - 3: Backpack Overlay'''
     bag_button: Button
     bag_window: BagWindow
+
+    '''check point 3 -2: Shop Overlay'''
+    shop_window: ShopWindow
     
     def __init__(self):
         super().__init__()
@@ -93,11 +97,15 @@ class GameScene(Scene):
             on_click = self.bag_window.toggle
         )
 
+        ## check point 3 -2: Shop Overlay 初始化 shop ##
+        self.shop_window = ShopWindow(self.game_manager, self.font_title, self.font_item)
+
     ## 當 SettingWindow 讀取存檔後，會呼叫此函式來更新所有場景中的參照 ##
     def on_game_reload(self, new_manager: GameManager):
         self.game_manager = new_manager
         self.menu_window.game_manager = new_manager
         self.bag_window.game_manager = new_manager
+        self.shop_window.game_manager = new_manager
         Logger.info("GameScene reference updated successfully.")
         
 
@@ -127,6 +135,9 @@ class GameScene(Scene):
 
         elif self.bag_window.is_open:
             self.bag_window.update(dt)
+
+        elif self.shop_window.is_open:
+            self.shop_window.update(dt)
             
         else: ## 正常遊戲 ##
             # Check if there is assigned next scene
@@ -175,12 +186,14 @@ class GameScene(Scene):
                     )
                     scene_manager.change_scene("battle")
                     return 
-
+                
+            '''check point 3 -2: Shop Interaction'''
             for merchant in self.game_manager.merchants.get(self.game_manager.current_map_key, []):
                 merchant.update(dt)
                 if merchant.detected and input_manager.key_pressed(pg.K_SPACE):
                     Logger.info("Store Triggered!")
-                    ## todo: open store window
+                    self.shop_window.setup_shop(merchant.goods)
+                
 
             # Update others
             self.game_manager.bag.update(dt)
@@ -237,3 +250,4 @@ class GameScene(Scene):
         self.menu_window.draw(screen)
         self.setting_window.draw(screen)
         self.bag_window.draw(screen)
+        self.shop_window.draw(screen)
