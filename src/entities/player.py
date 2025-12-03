@@ -8,7 +8,7 @@ import math
 from typing import override
 
 class Player(Entity):
-    speed: float = 4 * GameSettings.TILE_SIZE
+    speed: float = 8 * GameSettings.TILE_SIZE
     game_manager: GameManager
 
     def __init__(self, x: float, y: float, game_manager: GameManager) -> None:

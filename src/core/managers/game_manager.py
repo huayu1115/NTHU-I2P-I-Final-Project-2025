@@ -77,6 +77,8 @@ class GameManager:
             if self.player:
                 if self.current_map_key in self.player_last_positions:
                     self.player.position = self.player_last_positions[self.current_map_key]
+                    if self.current_map_key == "map.tmx": 
+                        self.player.position.y += GameSettings.TILE_SIZE
                 else:
                     self.player.position = self.maps[self.current_map_key].spawn
             
