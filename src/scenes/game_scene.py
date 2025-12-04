@@ -59,6 +59,9 @@ class GameScene(Scene):
         self.font_item = pg.font.Font("././assets/fonts/Minecraft.ttf", 20)
         px, py = GameSettings.SCREEN_WIDTH , GameSettings.SCREEN_HEIGHT
 
+        self.log_text = ""
+        self.log_timer = 0.0
+
         ## check point 2 - 1: Overlay 初始化 menu ##
         self.menu_window = MenuWindow(self.game_manager, self.font_title)
 
@@ -107,8 +110,15 @@ class GameScene(Scene):
         self.bag_window.game_manager = new_manager
         self.shop_window.game_manager = new_manager
         Logger.info("GameScene reference updated successfully.")
-        
 
+    # 檢查背包中是否有任何怪獸 HP > 0
+    def check_team_alive(self) -> bool:
+        for monster in self.game_manager.bag._monsters_data:
+            hp = monster.get("hp", monster.get("current_hp", 0))
+            if hp > 0:
+                return True
+        return False
+        
     @override
     def enter(self) -> None:
         sound_manager.play_bgm("RBY 103 Pallet Town.ogg")
@@ -126,6 +136,11 @@ class GameScene(Scene):
         self.menu_button.update(dt)
         self.setting_button.update(dt)
         self.bag_button.update(dt)
+
+        if self.log_timer > 0:
+            self.log_timer -= dt
+            if self.log_timer <= 0:
+                self.log_text = ""
         
         if self.menu_window.is_open:
             self.menu_window.update(dt)
@@ -157,9 +172,21 @@ class GameScene(Scene):
                 if is_moving and in_grass:
                     if random.random() < 0.05: 
                         Logger.info("Wild Monster Encountered!")
+
+                        if not self.check_team_alive():
+                            self.log_text = "You have no energy to battle! Please heal!"
+                            self.log_timer = 1.0
+                            Logger.info("You have no energy to battle! Please heal!")
+                            return
                         
-                        # 將當前的 game_manager 傳過去，並從背包中隨機選一隻當作敵人
-                        enemy_data = random.choice(self.game_manager.bag._monsters_data)
+                        monster_keys = list(self.game_manager.monster_database.keys())
+                        species = random.choice(monster_keys)
+                        enemy_data = self.game_manager.monster_database[species].copy()
+                        enemy_data["level"] = random.randint(1, 40)
+                        
+                        if "current_hp" in enemy_data: del enemy_data["current_hp"]
+                        if "hp" in enemy_data: del enemy_data["hp"]
+
                         battle_scene = scene_manager._scenes["battle"]    
                         battle_scene.setup_battle(
                             self.game_manager, 
@@ -176,6 +203,12 @@ class GameScene(Scene):
                 if enemy.detected and input_manager.key_pressed(pg.K_SPACE):
                     Logger.info("Battle Triggered!")
 
+                    if not self.check_team_alive():
+                        self.log_text = "You have no energy to battle! Please heal!"
+                        self.log_timer = 1.0
+                        Logger.info("You have no energy to battle! Please heal!")
+                        return
+
                     # 取得訓練家資料
                     t_id = enemy.trainer_id
                     trainer_data = self.game_manager.trainer_database.get(t_id)
@@ -189,7 +222,6 @@ class GameScene(Scene):
 
                     battle_monster_data = base_monster_data.copy()
                     battle_monster_data["level"] = first_monster_info["level"]
-                    battle_monster_data["current_hp"] = 9999
 
                     battle_scene = scene_manager._scenes["battle"]    
                     battle_scene.setup_battle(
@@ -264,3 +296,13 @@ class GameScene(Scene):
         self.setting_window.draw(screen)
         self.bag_window.draw(screen)
         self.shop_window.draw(screen)
+
+        if self.log_text:
+            log_txt = self.font_item.render(self.log_text, True, (255, 255, 255))
+            log_rect = log_txt.get_rect(center=(GameSettings.SCREEN_WIDTH // 2, GameSettings.SCREEN_HEIGHT - 100))
+            bg_rect = log_rect.inflate(20, 10)
+            s = pg.Surface((bg_rect.width, bg_rect.height))
+            s.set_alpha(150)
+            s.fill((0,0,0))
+            screen.blit(s, bg_rect.topleft)
+            screen.blit(log_txt, log_rect)

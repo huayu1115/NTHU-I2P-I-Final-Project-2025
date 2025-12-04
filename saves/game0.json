@@ -63,9 +63,10 @@
   },
   "bag": {
     "monsters": [
-      { "name": "Sproutkit", "level": 15, "hp": 40, "exp": 1200 },
-      { "name": "Leafpard",  "level": 32, "hp": 0,  "exp": 5000 },
-      { "name": "Leafpard",  "level": 32, "hp": 60,  "exp": 5000 }
+      { "name": "Sproutkit", "level": 17, "hp": 40, "exp": 1200 },
+      { "name": "Dreamweaver",  "level": 20, "hp": 10,  "exp": 5000 },
+      { "name": "Sonic-Fin",  "level": 25, "hp": 90,  "exp": 5000 },
+      { "name": "Infernotank",  "level": 38, "hp": 120,  "exp": 5000 }
 
     ],
     "items": [

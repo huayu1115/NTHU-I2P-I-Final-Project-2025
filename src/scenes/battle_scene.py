@@ -99,7 +99,8 @@ class BattleScene(Scene):
             return
         
         Logger.info("Player chose to Fight!")
-        damage = random.randint(15, 25)
+        base_dmg = self.player.attack
+        damage = int(base_dmg)
         self.enemy.take_damage(damage)
         self.log_text = f"You dealt {damage} damage!"
 
@@ -212,10 +213,11 @@ class BattleScene(Scene):
             self.turn_timer += dt
             if self.turn_timer > 1.0:
                 if self.player:
-                    dmg = random.randint(10, 20)
+                    base_dmg = self.enemy.attack
+                    dmg = int(base_dmg)
                     self.player.take_damage(dmg)
-                    self.log_text = f"{self.enemy.name} attacked! ({dmg} dmg)"
-                    
+                    self.log_text = f"{self.enemy.name} attacked! {dmg} dmg"
+                if self.turn_timer > 2.5:
                     if self.player.hp <= 0:
                         self.player.hp = 0
                         if self._auto_switch():
@@ -225,7 +227,7 @@ class BattleScene(Scene):
                             self.log_text = "You fainted..."
                     else:
                         self.state = "PLAYER"
-                self.turn_timer = 0
+                    self.turn_timer = 0
 
         elif self.state in ["WON", "LOST"]:
             self.turn_timer += dt
@@ -242,20 +244,23 @@ class BattleScene(Scene):
         if self.enemy:
             self.enemy.draw(screen)
             rect = self.enemy.sprite.rect if self.enemy.sprite else pg.Rect(0,0,0,0)
-            self.hp_bar.draw(screen, rect.x + 10, 70, self.enemy.hp, self.enemy.max_hp, self.enemy.name)
+            enemy_name_display = f"Lv.{self.enemy.level} {self.enemy.name}"
+            self.hp_bar.draw(screen, rect.x + 10, 70, self.enemy.hp, self.enemy.max_hp, enemy_name_display)
             
         ## 繪製玩家 ##
         if self.player:
             self.player.draw(screen)
             rect = self.player.sprite.rect if self.player.sprite else pg.Rect(0,0,0,0)
-            self.hp_bar.draw(screen, rect.x + 50, rect.top + 80, self.player.hp, self.player.max_hp, self.player.name)
+            player_name_display = f"Lv.{self.player.level} {self.player.name}"
+            self.hp_bar.draw(screen, rect.x + 50, rect.top + 80, self.player.hp, self.player.max_hp, player_name_display)
 
         ## 戰鬥訊息 ##
-        log_txt = self.font.render(self.log_text, True, (255, 255, 255))
-        log_rect = log_txt.get_rect(center=(GameSettings.SCREEN_WIDTH // 2, self.dashboard.rect.top - 30))
-        bg_rect = log_rect.inflate(20, 10)
-        s = pg.Surface((bg_rect.width, bg_rect.height))
-        s.set_alpha(150)
-        s.fill((0,0,0))
-        screen.blit(s, bg_rect.topleft)
-        screen.blit(log_txt, log_rect)
+        if self.log_text:
+            log_txt = self.font.render(self.log_text, True, (255, 255, 255))
+            log_rect = log_txt.get_rect(center=(GameSettings.SCREEN_WIDTH // 2, self.dashboard.rect.top - 30))
+            bg_rect = log_rect.inflate(20, 10)
+            s = pg.Surface((bg_rect.width, bg_rect.height))
+            s.set_alpha(150)
+            s.fill((0,0,0))
+            screen.blit(s, bg_rect.topleft)
+            screen.blit(log_txt, log_rect)
