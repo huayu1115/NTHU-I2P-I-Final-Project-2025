@@ -12,7 +12,8 @@ class Player(Entity):
     game_manager: GameManager
 
     def __init__(self, x: float, y: float, game_manager: GameManager) -> None:
-        super().__init__(x, y, game_manager)
+        sprite_path = "character/ow3.png"
+        super().__init__(x, y, game_manager, sprite_path)
         
 
     @override

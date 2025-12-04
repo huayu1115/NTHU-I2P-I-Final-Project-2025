@@ -26,6 +26,7 @@ class EnemyTrainer(Entity):
     warning_sign: Sprite
     detected: bool
     los_direction: Direction
+    trainer_id: str
 
     @override
     def __init__(
@@ -36,10 +37,16 @@ class EnemyTrainer(Entity):
         classification: EnemyTrainerClassification = EnemyTrainerClassification.STATIONARY,
         max_tiles: int | None = 2,
         facing: Direction | None = None,
+        trainer_id="unknown",
+        sprite_path: str = None
     ) -> None:
-        super().__init__(x, y, game_manager)
+        
+        target_path = sprite_path if sprite_path else "character/ow1.png"
+
+        super().__init__(x, y, game_manager, target_path)
         self.classification = classification
         self.max_tiles = max_tiles
+        self.trainer_id = trainer_id
         if classification == EnemyTrainerClassification.STATIONARY:
             self._movement = IdleMovement()
             if facing is None:
@@ -132,6 +139,11 @@ class EnemyTrainer(Entity):
         max_tiles = data.get("max_tiles")
         facing_val = data.get("facing")
         facing: Direction | None = None
+        t_id = data.get("id", "Serena")
+
+        db_data = game_manager.trainer_database.get(t_id, {})
+        s_path = db_data.get("sprite_path", "character/ow1.png")
+
         if facing_val is not None:
             if isinstance(facing_val, str):
                 facing = Direction[facing_val]
@@ -146,6 +158,8 @@ class EnemyTrainer(Entity):
             classification,
             max_tiles,
             facing,
+            trainer_id=t_id,
+            sprite_path=s_path
         )
 
     @override

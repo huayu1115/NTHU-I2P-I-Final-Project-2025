@@ -175,17 +175,30 @@ class GameScene(Scene):
                 # 偵測是否發現玩家且玩家按下空白鍵
                 if enemy.detected and input_manager.key_pressed(pg.K_SPACE):
                     Logger.info("Battle Triggered!")
-                
-                    # 將當前的 game_manager 傳過去，並從背包中隨機選一隻當作敵人
-                    enemy_data = random.choice(self.game_manager.bag._monsters_data)
+
+                    # 取得訓練家資料
+                    t_id = enemy.trainer_id
+                    trainer_data = self.game_manager.trainer_database.get(t_id)
+                    if not trainer_data:
+                        Logger.error(f"Trainer data for {t_id} not found!")
+                        return
+                    Logger.info(f"Fighting against {trainer_data['name']}")
+
+                    first_monster_info = trainer_data["team"][0]
+                    base_monster_data = self.game_manager.monster_database.get(first_monster_info["name"])
+
+                    battle_monster_data = base_monster_data.copy()
+                    battle_monster_data["level"] = first_monster_info["level"]
+                    battle_monster_data["current_hp"] = 9999
+
                     battle_scene = scene_manager._scenes["battle"]    
                     battle_scene.setup_battle(
                         self.game_manager, 
-                        enemy_data,
+                        battle_monster_data,
                         BattleType.TRAINER
                     )
                     scene_manager.change_scene("battle")
-                    return 
+                    return
                 
             '''check point 3 -2: Shop Interaction'''
             for merchant in self.game_manager.merchants.get(self.game_manager.current_map_key, []):

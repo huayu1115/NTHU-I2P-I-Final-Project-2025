@@ -22,6 +22,7 @@ class GameManager:
     # Databases
     item_database: dict[str, dict]
     monster_database: dict[str, dict]
+    trainer_database: dict[str, dict]
     
     # Map properties
     current_map_key: str
@@ -50,6 +51,7 @@ class GameManager:
 
         self.item_database = self._load_database("src/data/items.json")
         self.monster_database = self._load_database("src/data/monsters.json")
+        self.trainer_database = self._load_database("src/data/trainers.json")
         
         # Check If you should change scene
         self.should_change_scene = False
