@@ -1,0 +1,35 @@
+{
+  "Sproutkit": {
+    "name": "Sproutkit",
+    "type": "grass",
+    "base_hp": 39,
+    "base_attack": 52,
+    "sprite_path": "menu_sprites/menusprite1.png",
+    "sprite_battle_path": "sprites/sprite1.png", 
+    "evolution": {
+      "level": 16,
+      "next_id": "Leafpard"
+    }
+  },
+  "Leafpard": {
+    "name": "Leafpard",
+    "type": "grass",
+    "base_hp": 58,
+    "base_attack": 64,
+    "sprite_path": "menu_sprites/menusprite2.png",
+    "sprite_battle_path": "sprites/sprite2.png",
+    "evolution": {
+      "level": 36,
+      "next_id": "Jungleo"
+    }
+  },
+  "Jungleo": {
+    "name": "Jungleo",
+    "type": "grass",
+    "base_hp": 78,
+    "base_attack": 84,
+    "sprite_path": "menu_sprites/menusprite3.png",
+    "sprite_battle_path": "sprites/sprite3.png",
+    "evolution": null
+  }
+}

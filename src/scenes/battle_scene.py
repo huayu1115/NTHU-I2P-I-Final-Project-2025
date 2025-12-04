@@ -51,7 +51,7 @@ class BattleScene(Scene):
         self.game_manager = game_manager
         self.battle_type = battle_type
         
-        self.enemy = Monster(enemy_data, is_player=False)
+        self.enemy = Monster(enemy_data, is_player=False, game_manager=self.game_manager)
         self.enemy.hp = self.enemy.max_hp
 
         if self.battle_type == BattleType.WILD:
@@ -152,7 +152,7 @@ class BattleScene(Scene):
 
         self.current_monster_index = found_index
         new_data = self.all_monsters[found_index]
-        self.player = Monster(new_data, is_player=True)
+        self.player = Monster(new_data, is_player=True, game_manager=self.game_manager)
 
         self.log_text = f"Go! {self.player.name}!"
         self.state = "ENEMY"
@@ -174,7 +174,7 @@ class BattleScene(Scene):
 
         self.current_monster_index = found_index
         new_data = self.all_monsters[found_index]
-        self.player = Monster(new_data, is_player=True)
+        self.player = Monster(new_data, is_player=True, game_manager=self.game_manager)
         
         self.log_text = f"Go {self.player.name}!"
         return True
@@ -195,7 +195,7 @@ class BattleScene(Scene):
                 found_alive = False
                 for i, m_data in enumerate(monsters):
                     if m_data.get("hp", 0) > 0:
-                        self.player = Monster(m_data, is_player=True)
+                        self.player = Monster(m_data, is_player=True, game_manager=self.game_manager)
                         self.current_monster_index = i
                         found_alive = True
                         break

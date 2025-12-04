@@ -4,6 +4,7 @@ from src.interface.windows.window import Window
 from src.interface.components import Button
 from src.core import GameManager
 from src.utils import load_img, Logger
+from src.entities.monster import Monster
 
 class BagWindow(Window):
     def __init__(self, game_manager: GameManager, font_title: pg.font.Font, font_item: pg.font.Font):
@@ -177,41 +178,41 @@ class BagWindow(Window):
             self.btn_item_next.draw(screen)
 
 
-        # ==========================================
-        # 右側：怪獸列表 (Monsters)
-        # ==========================================
+        ## Monsters ##
         all_monsters = self.game_manager.bag._monsters_data
         total_monsters = len(all_monsters)
         
-        # 怪獸頁碼計算
+        # 頁碼計算
         max_monster_page = (total_monsters - 1) // self.items_per_page if total_monsters > 0 else 0
         monster_title_text = f"Monsters ({self.current_monster_page + 1}/{max_monster_page + 1})"
         monster_title = self.font_item.render(monster_title_text, True, (0, 0, 0))
         screen.blit(monster_title, (self.rect.centerx + 50, self.rect.y + 90))
-        
-        # 怪獸切片
+
         m_start = self.current_monster_page * self.items_per_page
         m_end = m_start + self.items_per_page
         page_monsters = all_monsters[m_start:m_end]
 
-        # 繪製怪獸 (包含格子)
+        # 繪製怪獸
         for i, monster in enumerate(page_monsters):
-            # 計算統一的 Y 座標
-            base_y = self.rect.y + 120 + (i * self.item_height)
             
-            # 1. 畫格子 (寬度 250)
+            # 格子
+            base_y = self.rect.y + 120 + (i * self.item_height)
             bg_rect = pg.Rect(self.rect.centerx + 20, base_y, 250, 50)
             pg.draw.rect(screen, (255, 255, 255), bg_rect, border_radius=5)
             pg.draw.rect(screen, (100, 100, 100), bg_rect, 2, border_radius=5)
 
-            # 2. 準備資料
-            m_name = monster.get("name", "Unknown")
+            # 資料
+            m_name = monster.get("name")
+            db_data = self.game_manager.monster_database.get(m_name, {})
+            sprite_path = db_data.get("sprite_path", None)
             m_level = monster.get("level", 1)
-            m_hp = monster.get("hp", 0)
-            m_max = monster.get("max_hp", 100)
-            sprite_path = monster.get("sprite_path", None)
+            m_hp = monster.get("hp")
+            base_hp = db_data.get("base_hp", 40)
+            m_max = Monster.calculate_max_hp(base_hp, m_level)
+            if m_hp > m_max: m_hp = m_max
+            if m_hp < 0: m_hp = 0
 
-            # 3. 畫 Icon
+            # Icon
             icon_size = 35
             icon_x = self.rect.centerx + 25
             icon_y_offset = (50 - icon_size) // 2
