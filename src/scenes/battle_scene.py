@@ -65,17 +65,30 @@ class BattleScene(Scene):
 
     ## 捕捉邏輯 ##
     def try_catch_monster(self):
-        if self.state != "PLAYER" or not self.enemy:
+        if self.state != "PLAYER" or not self.enemy: return
+
+        # 精靈球邏輯
+        bag_items = self.game_manager.bag._items_data
+        pokeball = next((i for i in bag_items if i["name"] == "Pokeball"), None)
+
+        if not pokeball or pokeball.get("count", 0) <= 0:
+            self.log_text = "You don't have any Pokeballs!"
             return
+            
+        pokeball["count"] -= 1
+        Logger.info(f"Used a Pokeball. Remaining: {pokeball['count']}")
+
+        if pokeball["count"] <= 0:
+             bag_items.remove(pokeball)
+
+        # 捕捉怪獸放入背包
         Logger.info("Player threw a Ball!")
         self.state = "WON"
         self.log_text = f"Gotcha! {self.enemy.name} was caught!"
-        if self.game_manager and self.game_manager.bag:
-            # 複製怪獸資料並更新當前血量
-            data = self.enemy.data.copy() 
+        if self.game_manager and self.game_manager.bag:    
+            data = self.enemy.data.copy() # 複製怪獸資料並更新當前血量
             data["hp"] = self.enemy.hp    
-            # 加入背包列表
-            self.game_manager.bag._monsters_data.append(data)
+            self.game_manager.bag._monsters_data.append(data) # 加入背包列表
             Logger.info(f"Added {self.enemy.name} to bag.")
 
         self.turn_timer = 0
