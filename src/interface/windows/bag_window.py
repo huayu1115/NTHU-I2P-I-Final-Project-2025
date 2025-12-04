@@ -1,6 +1,7 @@
 '''check point 2 - 3: Backpack Overlay'''
 import pygame as pg
 from src.interface.windows.window import Window 
+from src.interface.components import Button
 from src.core import GameManager
 from src.utils import load_img, Logger
 
@@ -15,6 +16,65 @@ class BagWindow(Window):
         # 圖片快取字典
         self.sprite_cache = {}
 
+        # 頁面相關
+        self.items_per_page = 6
+        self.item_height = 55 
+        self.current_item_page = 0
+        self.current_monster_page = 0
+
+        self.btn_item_prev = Button(
+            "UI/button_back.png",
+            "UI/button_back_hover.png",
+            self.rect.centerx - 185, self.rect.bottom - 50,
+            35, 35,
+            on_click=self.prev_item_page
+        )
+        
+        self.btn_item_next = Button(
+            "UI/button_play.png",
+            "UI/button_play_hover.png",
+            self.rect.centerx - 160, self.rect.bottom - 50,
+            35, 35,
+            on_click=self.next_item_page
+        )
+
+        self.btn_monster_prev = Button(
+            "UI/button_back.png",
+            "UI/button_back_hover.png",
+            self.rect.centerx + 110, self.rect.bottom - 50,
+            35, 35,
+            on_click=self.prev_monster_page
+        )
+        
+        self.btn_monster_next = Button(
+            "UI/button_play.png",
+            "UI/button_play_hover.png",
+            self.rect.centerx + 135, self.rect.bottom - 50,
+            35, 35,
+            on_click=self.next_monster_page
+        )
+
+    # 物品翻頁邏輯 
+    def prev_item_page(self):
+        if self.current_item_page > 0:
+            self.current_item_page -= 1
+
+    def next_item_page(self):
+        total = len(self.game_manager.bag._items_data)
+        max_page = (total - 1) // self.items_per_page
+        if self.current_item_page < max_page:
+            self.current_item_page += 1
+
+    # 怪獸翻頁邏輯
+    def prev_monster_page(self):
+        if self.current_monster_page > 0:
+            self.current_monster_page -= 1
+            
+    def next_monster_page(self):
+        total = len(self.game_manager.bag._monsters_data)
+        max_page = (total - 1) // self.items_per_page
+        if self.current_monster_page < max_page:
+            self.current_monster_page += 1
 
     # 輔助函式：獲取快取圖片
     def get_cached_sprite(self, path: str, size: int):
@@ -33,67 +93,147 @@ class BagWindow(Window):
     
     def update(self, dt: float):
         super().update(dt)
+        if not self.is_open: return
+
+        # 更新物品按鈕
+        total_items = len(self.game_manager.bag._items_data)
+        max_item_page = (total_items - 1) // self.items_per_page
+        
+        if self.current_item_page > 0:
+            self.btn_item_prev.update(dt)
+        if total_items > 0 and self.current_item_page < max_item_page:
+            self.btn_item_next.update(dt)
+
+        # 更新怪獸按鈕
+        total_monsters = len(self.game_manager.bag._monsters_data)
+        max_monster_page = (total_monsters - 1) // self.items_per_page
+        
+        if self.current_monster_page > 0:
+            self.btn_monster_prev.update(dt)
+        if total_monsters > 0 and self.current_monster_page < max_monster_page:
+            self.btn_monster_next.update(dt)
     
 
     def draw(self, screen: pg.Surface):
         self.draw_background(screen)
-        
-        if not self.is_open:
-            return
-
-        items = self.game_manager.bag._items_data
-        monsters = self.game_manager.bag._monsters_data
+        if not self.is_open: return
 
         title_backpack = self.font_title.render("Backpack", True, (0, 0, 0))
         title_rect = title_backpack.get_rect(centerx=self.rect.centerx, y=self.rect.y + 30)
         screen.blit(title_backpack, title_rect)
 
-        # 物品列表
-        item_title = self.font_item.render("Items", True, (0, 0, 0))
+        all_items = self.game_manager.bag._items_data
+        total_items = len(all_items)
+        
+        # 物品頁碼計算
+        max_item_page = (total_items - 1) // self.items_per_page if total_items > 0 else 0
+        item_title_text = f"Items ({self.current_item_page + 1}/{max_item_page + 1})"
+        item_title = self.font_item.render(item_title_text, True, (0, 0, 0))
         screen.blit(item_title, (self.rect.x + 50, self.rect.y + 90))
 
-        current_y = self.rect.y + 120 # 列表起始 Y 座標
-        for item in items:
-            item_name = item.get("name", "Unknown Item")
-            item_quantity = item.get("count", item.get("quantity", 1))
+        # 物品切片
+        i_start = self.current_item_page * self.items_per_page
+        i_end = i_start + self.items_per_page
+        page_items = all_items[i_start:i_end]
+
+        # 繪製物品 (包含格子)
+        for i, item in enumerate(page_items):
+            # 計算統一的 Y 座標
+            base_y = self.rect.y + 120 + (i * self.item_height)
             
-            text = f"{item_name} x{item_quantity}"
-            item_text = self.font_item.render(text, True, (50, 50, 50))
-            screen.blit(item_text, (self.rect.x + 60, current_y))
-            current_y += 45 # 換行
+            # 1. 畫格子 (寬度設稍微窄一點 220，區分左右)
+            bg_rect = pg.Rect(self.rect.x + 30, base_y, 220, 50)
+            pg.draw.rect(screen, (255, 255, 255), bg_rect, border_radius=5) # 白底
+            pg.draw.rect(screen, (100, 100, 100), bg_rect, 2, border_radius=5) # 灰框
 
-        # 怪物列表
-        monster_title = self.font_item.render("Monsters", True, (0, 0, 0))
-        screen.blit(monster_title, (self.rect.centerx + 50, self.rect.y + 90))
-        
-        current_y = self.rect.y + 120 # 重置 Y 座標
-        for monster in monsters:
-            monster_name = monster.get("name", "Unknown Monster")
-            monster_level = monster.get("level", 1)
-            monster_hp = monster.get("hp", 0)
-            monster_max_hp = monster.get("max_hp", 100)
-            sprite_path = monster.get("sprite_path", None)
+            # 2. 準備資料
+            item_name = item.get("name", "Unknown")
+            item_count = item.get("count", 1)
+            sprite_path = item.get("sprite_path", None)
 
-            # 載入並縮放圖片
+            # 3. 畫 Icon
             icon_size = 35
-            icon_x = self.rect.centerx + 20
-
+            icon_x = self.rect.x + 40
+            icon_y_offset = (50 - icon_size) // 2
+            
             if sprite_path:
                 image = self.get_cached_sprite(sprite_path, icon_size)
-                screen.blit(image, (icon_x, current_y))
+                screen.blit(image, (icon_x, base_y + icon_y_offset))
             else:
-                pg.draw.rect(screen, (150, 150, 150), (icon_x, current_y, icon_size, icon_size))
+                # 沒圖就畫個小方塊代替
+                pg.draw.rect(screen, (200, 200, 200), (icon_x, base_y + icon_y_offset, icon_size, icon_size))
 
-            # 怪獸文字資訊
+            # 4. 畫文字
             text_x = icon_x + icon_size + 10
+            text_surf = self.font_item.render(f"{item_name} x{item_count}", True, (0, 0, 0))
+            # 垂直置中文字
+            text_rect = text_surf.get_rect(midleft=(text_x, base_y + 25))
+            screen.blit(text_surf, text_rect)
 
-            name_text = f"Lv.{monster_level} {monster_name}"
-            name_surface = self.font_item.render(name_text, True, (50, 50, 50))
-            screen.blit(name_surface, (text_x, current_y))
+        # 繪製物品翻頁按鈕
+        if self.current_item_page > 0:
+            self.btn_item_prev.draw(screen)
+        if total_items > 0 and self.current_item_page < max_item_page:
+            self.btn_item_next.draw(screen)
 
-            hp_text = f"HP: {monster_hp}/{monster_max_hp}"
-            hp_color = (200, 50, 50) if monster_hp < monster_max_hp * 0.2 else (50, 50, 50)
-            hp_surface = self.font_item.render(hp_text, True, hp_color)
-            screen.blit(hp_surface, (text_x, current_y + 20))
 
-            current_y += 45
+        # ==========================================
+        # 右側：怪獸列表 (Monsters)
+        # ==========================================
+        all_monsters = self.game_manager.bag._monsters_data
+        total_monsters = len(all_monsters)
+        
+        # 怪獸頁碼計算
+        max_monster_page = (total_monsters - 1) // self.items_per_page if total_monsters > 0 else 0
+        monster_title_text = f"Monsters ({self.current_monster_page + 1}/{max_monster_page + 1})"
+        monster_title = self.font_item.render(monster_title_text, True, (0, 0, 0))
+        screen.blit(monster_title, (self.rect.centerx + 50, self.rect.y + 90))
+        
+        # 怪獸切片
+        m_start = self.current_monster_page * self.items_per_page
+        m_end = m_start + self.items_per_page
+        page_monsters = all_monsters[m_start:m_end]
+
+        # 繪製怪獸 (包含格子)
+        for i, monster in enumerate(page_monsters):
+            # 計算統一的 Y 座標
+            base_y = self.rect.y + 120 + (i * self.item_height)
+            
+            # 1. 畫格子 (寬度 250)
+            bg_rect = pg.Rect(self.rect.centerx + 20, base_y, 250, 50)
+            pg.draw.rect(screen, (255, 255, 255), bg_rect, border_radius=5)
+            pg.draw.rect(screen, (100, 100, 100), bg_rect, 2, border_radius=5)
+
+            # 2. 準備資料
+            m_name = monster.get("name", "Unknown")
+            m_level = monster.get("level", 1)
+            m_hp = monster.get("hp", 0)
+            m_max = monster.get("max_hp", 100)
+            sprite_path = monster.get("sprite_path", None)
+
+            # 3. 畫 Icon
+            icon_size = 35
+            icon_x = self.rect.centerx + 25
+            icon_y_offset = (50 - icon_size) // 2
+            
+            if sprite_path:
+                image = self.get_cached_sprite(sprite_path, icon_size)
+                screen.blit(image, (icon_x, base_y + icon_y_offset))
+            else:
+                pg.draw.rect(screen, (200, 200, 200), (icon_x, base_y + icon_y_offset, icon_size, icon_size))
+
+            # 文字
+            text_x = icon_x + icon_size + 10
+        
+            name_surf = self.font_item.render(f"Lv.{m_level} {m_name}", True, (0, 0, 0))
+            screen.blit(name_surf, (text_x, base_y + 5))
+
+            hp_color = (200, 50, 50) if m_hp < m_max * 0.2 else (0, 0, 0)
+            hp_surf = self.font_item.render(f"HP: {m_hp}/{m_max}", True, hp_color)
+            screen.blit(hp_surf, (text_x, base_y + 25))
+
+        # 繪製怪獸翻頁按鈕
+        if self.current_monster_page > 0:
+            self.btn_monster_prev.draw(screen)
+        if total_monsters > 0 and self.current_monster_page < max_monster_page:
+            self.btn_monster_next.draw(screen)
